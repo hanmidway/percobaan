@@ -1,9 +1,2530 @@
 <!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <title>Test</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Informasi & Keuangan RT</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts & FontAwesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js untuk Visualisasi Grafik -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Libraries untuk Export PDF & Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
 </head>
-<body>
-  <h1>Hello GitHub Pages</h1>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- ================= LOADING SCREEN ================= -->
+  <div id="loader" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center text-white transition-all duration-300">
+    <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-500 mb-4"></div>
+    <p class="text-lg font-semibold animate-pulse" id="loaderText">Menghubungkan ke Google Server...</p>
+  </div>
+
+  <!-- ================= NOTIFIKASI TOAST ================= -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 max-w-sm transform translate-y-10 opacity-0 transition-all duration-300 bg-slate-900 text-white py-3 px-5 rounded-xl shadow-2xl flex items-center space-x-3">
+    <span id="toastIcon" class="text-teal-400"><i class="fas fa-check-circle text-xl"></i></span>
+    <span id="toastMsg" class="text-sm font-medium">Notifikasi pesan baru!</span>
+  </div>
+
+  <!-- ================= DIALOG KONFIRMASI MODAL ================= -->
+  <div id="confirmModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl transform scale-95 transition-all duration-300">
+      <div class="text-slate-900 text-xl font-bold mb-2" id="confirmTitle">Konfirmasi Tindakan</div>
+      <p class="text-slate-600 text-sm mb-6" id="confirmMessage">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+      <div class="flex justify-end space-x-3">
+        <button id="confirmCancelBtn" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm font-semibold">Batal</button>
+        <button id="confirmOkBtn" class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LOGIN PAGE ================= -->
+  <div id="loginPage" class="flex-1 flex items-center justify-center p-4 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-900">
+    <div class="bg-white/10 backdrop-blur-md p-8 rounded-3xl w-full max-w-md border border-white/20 shadow-2xl text-white">
+      <div class="text-center mb-8">
+        <div class="inline-flex p-4 bg-teal-500/20 rounded-2xl text-teal-400 mb-4 text-3xl">
+          <i class="fa-solid fa-house-chimney-window"></i>
+        </div>
+        <h1 class="text-2xl font-black tracking-tight">SISTEM KAS RT</h1>
+        <p class="text-slate-300 text-xs mt-1">Kelola Keuangan, IPAL, Jimpitan & Arisan Terpadu</p>
+      </div>
+      
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fas fa-user"></i></span>
+            <input type="text" id="loginUser" required class="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none placeholder-slate-500" placeholder="Masukkan username">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fas fa-lock"></i></span>
+            <input type="password" id="loginPass" required class="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none placeholder-slate-500" placeholder="••••••••">
+          </div>
+        </div>
+        
+        <button type="submit" class="w-full py-3.5 bg-teal-500 hover:bg-teal-600 active:scale-[0.98] transition-all text-white font-bold rounded-xl text-sm shadow-lg shadow-teal-500/20 mt-4">
+          MASUK KE SISTEM <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+      </form>
+
+      <div class="mt-8 pt-6 border-t border-white/10 text-center">
+        <p class="text-slate-400 text-[10px]">Silakan hubungi Administrator untuk mendapatkan akses login</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= APP CONTAINER ================= -->
+  <div id="appContainer" class="hidden flex-1 flex flex-col lg:flex-row min-h-screen">
+    
+    <!-- SIDEBAR NAVIGASI -->
+    <aside class="w-full lg:w-64 bg-slate-900 text-slate-400 flex flex-col border-r border-slate-800">
+      <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="p-2.5 bg-teal-500/10 text-teal-400 rounded-xl"><i class="fa-solid fa-hotel"></i></div>
+          <div>
+            <div class="text-white font-extrabold text-sm tracking-wide" id="sidebarTitle">RT DIGI APP</div>
+            <div class="text-[10px] text-teal-400 font-semibold" id="userRoleBadge">ROLE: -</div>
+          </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="lg:hidden text-white text-xl"><i class="fas fa-bars"></i></button>
+      </div>
+      
+      <!-- List Menu -->
+      <nav id="sidebarMenu" class="hidden lg:flex flex-col flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+        <!-- Generasi Menu Link Berdasarkan Peran -->
+      </nav>
+
+      <!-- Profil Operator Bawah -->
+      <div class="p-4 border-t border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-3 overflow-hidden">
+          <div class="w-9 h-9 bg-teal-500/20 text-teal-400 flex items-center justify-center rounded-full font-bold text-sm" id="userInitial">OP</div>
+          <div class="overflow-hidden">
+            <div class="text-white text-xs font-bold truncate" id="userFullname">Operator</div>
+            <div class="text-[10px] text-slate-500 truncate" id="userRoleDetail">Operator Akses</div>
+          </div>
+        </div>
+        <button onclick="handleLogout()" class="text-rose-400 hover:text-rose-300 p-2 rounded-lg hover:bg-white/5 transition-all text-sm" title="Logout">
+          <i class="fas fa-power-off"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- KONTEN UTAMA -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <!-- Top Bar responsif -->
+      <header class="bg-white border-b border-slate-100 py-4 px-6 flex items-center justify-between lg:justify-end">
+        <button onclick="toggleMobileMenu()" class="lg:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg"><i class="fas fa-bars text-lg"></i></button>
+        <div class="flex items-center space-x-4">
+          <div class="hidden sm:flex flex-col text-right">
+            <span class="text-xs text-slate-400 font-medium">Sistem Server Waktu</span>
+            <span class="text-xs text-slate-700 font-bold" id="clock">00:00:00 WIB</span>
+          </div>
+          <div class="h-8 w-px bg-slate-200 hidden sm:block"></div>
+          <button onclick="bukaNotifikasiPanel()" class="relative p-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-xl transition-all">
+            <i class="fas fa-bell text-lg"></i>
+            <span id="notifBadge" class="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-bold h-4 w-4 rounded-full flex items-center justify-center hidden">0</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Konten Workspace Dinamis -->
+      <div id="workspace" class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <!-- Halaman / Menu akan di-render secara dinamis di sini -->
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= NOTIFIKASI DRAWER/PANEL ================= -->
+  <div id="notifPanel" class="fixed inset-y-0 right-0 z-40 w-80 bg-white shadow-2xl border-l border-slate-100 transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+      <span class="font-bold text-slate-900"><i class="fas fa-bell text-teal-500 mr-2"></i>Notifikasi & Peringatan</span>
+      <button onclick="tutupNotifikasiPanel()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="notifList" class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar">
+      <!-- Diisi dinamis -->
+    </div>
+  </div>
+
+  <script>
+    // Konfigurasi API Google App Script
+    const apiKey = ""; // Dibiarkan kosong sesuai instruksi lingkungan
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'app-kas-rt-universal';
+    
+    // VARIABEL STATE GLOBAL
+    let state = {
+      user: null,
+      warga: [],
+      pertemuan: [],
+      pembayaran: [],
+      pengeluaran: [],
+      arisanDetail: [],
+      pengaturan: [],
+      log: [],
+      activeMenu: 'dashboard'
+    };
+
+    // Daftar menu yang tersedia untuk masing-masing Role
+    // admin, ketua, bendahara, ipal, kas_social
+    const MENU_CONFIG = [
+      { id: 'dashboard', name: 'Dashboard', icon: 'fa-chart-pie', roles: ['admin', 'ketua', 'bendahara', 'ipal', 'kas_social'] },
+      { id: 'master_warga', name: 'Master Warga', icon: 'fa-users', roles: ['admin', 'ketua'] },
+      { id: 'pertemuan', name: 'Pertemuan', icon: 'fa-calendar-days', roles: ['admin', 'bendahara'] },
+      { id: 'input_pembayaran', name: 'Input Pembayaran', icon: 'fa-file-invoice-dollar', roles: ['admin', 'bendahara'] },
+      { id: 'arisan', name: 'Arisan Warga', icon: 'fa-rotate', roles: ['admin', 'bendahara', 'ketua'] },
+      { id: 'ipal', name: 'Kas IPAL', icon: 'fa-faucet-drip', roles: ['admin', 'ipal', 'bendahara', 'ketua'] },
+      { id: 'jimpitan', name: 'Kas Jimpitan', icon: 'fa-sack-dollar', roles: ['admin', 'bendahara', 'ketua'] },
+      { id: 'kas_social', name: 'Kas Sosial', icon: 'fa-hand-holding-heart', roles: ['admin', 'kas_social', 'bendahara', 'ketua'] },
+      { id: 'pengeluaran', name: 'Pengeluaran Kas', icon: 'fa-money-bill-transfer', roles: ['admin', 'bendahara', 'ipal', 'kas_social'] },
+      { id: 'laporan', name: 'Laporan Keuangan', icon: 'fa-file-lines', roles: ['admin', 'bendahara', 'ketua'] },
+      { id: 'histori_warga', name: 'Histori Warga', icon: 'fa-clock-rotate-left', roles: ['admin', 'bendahara', 'ketua', 'ipal', 'kas_social'] },
+      { id: 'pengaturan', name: 'Pengaturan', icon: 'fa-gears', roles: ['admin'] },
+      { id: 'backup', name: 'Backup Database', icon: 'fa-database', roles: ['admin'] }
+    ];
+
+    // INTI ENGINE JALAN PERTAMA KALI
+    window.onload = function() {
+      // Jalankan Jam Server Digital
+      setInterval(() => {
+        const d = new Date();
+        document.getElementById('clock').textContent = d.toLocaleTimeString('id-ID') + ' WIB';
+      }, 1000);
+      
+      // Ambil session login dari localStorage jika ada
+      const savedUser = localStorage.getItem('rt_user_session');
+      if (savedUser) {
+        state.user = JSON.parse(savedUser);
+        initDashboardApp();
+      } else {
+        showLoader(false);
+      }
+    };
+
+    // FUNGSI LOADER & NOTIFIKASI
+    function showLoader(show, text = 'Mengolah Data...') {
+      const loader = document.getElementById('loader');
+      const loaderText = document.getElementById('loaderText');
+      loaderText.textContent = text;
+      if (show) {
+        loader.classList.remove('hidden');
+        loader.classList.remove('opacity-0');
+      } else {
+        loader.classList.add('opacity-0');
+        setTimeout(() => loader.classList.add('hidden'), 300);
+      }
+    }
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      
+      toastMsg.textContent = message;
+      if (isError) {
+        toast.classList.replace('bg-slate-900', 'bg-rose-600');
+        toastIcon.innerHTML = `<i class="fas fa-exclamation-circle text-xl"></i>`;
+      } else {
+        toast.classList.replace('bg-rose-600', 'bg-slate-900');
+        toastIcon.innerHTML = `<i class="fas fa-check-circle text-xl text-teal-400"></i>`;
+      }
+      
+      toast.classList.remove('translate-y-10', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-10', 'opacity-0');
+      }, 3500);
+    }
+
+    // CUSTOM CONFIRM MODAL (Mencegah alert)
+    function showConfirm(title, message, onConfirm) {
+      const modal = document.getElementById('confirmModal');
+      const t = document.getElementById('confirmTitle');
+      const m = document.getElementById('confirmMessage');
+      const cancelBtn = document.getElementById('confirmCancelBtn');
+      const okBtn = document.getElementById('confirmOkBtn');
+      
+      t.textContent = title;
+      m.textContent = message;
+      modal.classList.remove('hidden');
+      
+      const close = () => { modal.classList.add('hidden'); };
+      
+      cancelBtn.onclick = close;
+      okBtn.onclick = () => {
+        close();
+        onConfirm();
+      };
+    }
+
+    // SISI LOGIN HANDLER
+    function handleLogin(e) {
+      e.preventDefault();
+      const userVal = document.getElementById('loginUser').value.trim();
+      const passVal = document.getElementById('loginPass').value.trim();
+      
+      showLoader(true, 'Memverifikasi Akun...');
+      
+      // Menggunakan google.script.run untuk memanggil backend Apps Script
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              state.user = res.user;
+              localStorage.setItem('rt_user_session', JSON.stringify(res.user));
+              initDashboardApp();
+            } else {
+              showLoader(false);
+              showToast(res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal koneksi server: " + err, true);
+          })
+          .executeAction("login", { username: userVal, password: passVal });
+      } else {
+        // Mode Simulasi Offline untuk Testing Local
+        setTimeout(() => {
+          showLoader(false);
+          const mockUsers = [
+            { username: "admin", role: "admin", nama: "Administrator RT" },
+            { username: "ketua", role: "ketua", nama: "Ketua RT 05" },
+            { username: "bendahara", role: "bendahara", nama: "Bendahara Keuangan" },
+            { username: "ipal", role: "ipal", nama: "Petugas IPAL" },
+            { username: "kassosial", role: "kas_social", nama: "Petugas Kas Sosial" }
+          ];
+          const found = mockUsers.find(u => u.username === userVal && passVal === userVal + "123");
+          if (found) {
+            state.user = found;
+            localStorage.setItem('rt_user_session', JSON.stringify(found));
+            initDashboardApp();
+          } else {
+            showToast("Username salah (Gunakan: admin/admin123, bendahara/bendahara123, dsb.)", true);
+          }
+        }, 1000);
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem('rt_user_session');
+      state.user = null;
+      document.getElementById('appContainer').classList.add('hidden');
+      document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('loginForm').reset();
+      showToast("Berhasil keluar dari sistem.");
+    }
+
+    // INITIALISASI DASHBOARD SISTEM
+    function initDashboardApp() {
+      document.getElementById('loginPage').classList.add('hidden');
+      document.getElementById('appContainer').classList.remove('hidden');
+      
+      // Update Profil User UI
+      document.getElementById('userFullname').textContent = state.user.nama;
+      document.getElementById('userRoleDetail').textContent = getRoleName(state.user.role);
+      document.getElementById('userRoleBadge').textContent = 'ROLE: ' + state.user.role.toUpperCase();
+      document.getElementById('userInitial').textContent = state.user.nama.substring(0, 2).toUpperCase();
+      
+      renderSidebar();
+      refreshDataSistem();
+    }
+
+    function getRoleName(role) {
+      switch(role) {
+        case 'admin': return 'Administrator';
+        case 'ketua': return 'Ketua RT';
+        case 'bendahara': return 'Bendahara';
+        case 'ipal': return 'Petugas IPAL';
+        case 'kas_social': return 'Petugas Kas Sosial';
+        default: return 'User';
+      }
+    }
+
+    function renderSidebar() {
+      const menuContainer = document.getElementById('sidebarMenu');
+      menuContainer.innerHTML = '';
+      
+      MENU_CONFIG.forEach(item => {
+        if (item.roles.includes(state.user.role)) {
+          const isActive = state.activeMenu === item.id;
+          const a = document.createElement('a');
+          a.href = '#';
+          a.onclick = (e) => {
+            e.preventDefault();
+            switchMenu(item.id);
+          };
+          a.className = `flex items-center space-x-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+            isActive 
+              ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' 
+              : 'hover:bg-slate-800 hover:text-white text-slate-400'
+          }`;
+          a.innerHTML = `<i class="fa-solid ${item.icon} text-sm"></i> <span>${item.name}</span>`;
+          menuContainer.appendChild(a);
+        }
+      });
+    }
+
+    function switchMenu(menuId) {
+      state.activeMenu = menuId;
+      renderSidebar();
+      renderContentArea();
+      // Auto close mobile menu
+      const menu = document.getElementById('sidebarMenu');
+      if (window.innerWidth < 1024) {
+        menu.classList.add('hidden');
+      }
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('sidebarMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    // REFRESH DATA DARI GOOGLE SCRIPT
+    function refreshDataSistem(msg = 'Memuat Data Terkini...') {
+      showLoader(true, msg);
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              state.warga = res.warga;
+              state.pertemuan = res.pertemuan;
+              state.pembayaran = res.pembayaran;
+              state.pengeluaran = res.pengeluaran;
+              state.arisanDetail = res.arisanDetail;
+              state.pengaturan = res.pengaturan;
+              state.log = res.log;
+              
+              generateSistemPintar(); // Hitung notifikasi tunggakan, dsb.
+              renderContentArea();
+              showLoader(false);
+            } else {
+              showLoader(false);
+              showToast("Gagal mengambil data database: " + res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Server Error: " + err, true);
+          })
+          .executeAction("getDataDasar", {});
+      } else {
+        // Simulasi Offline Mock Data
+        setTimeout(() => {
+          generateMockDatabase();
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+        }, 800);
+      }
+    }
+
+    // SIMULASI OFFLINE DATABASE
+    function generateMockDatabase() {
+      if (state.warga.length === 0) {
+        state.warga = [
+          { "ID Warga": "W001", "Nama": "Sutrisno", "Jumlah WC": 1, "Status": "Aktif", "Nomor HP": "081234567890", "Alamat": "RT 05 No. 12", "Keterangan": "Rumah Pribadi" },
+          { "ID Warga": "W002", "Nama": "Bambang Pamungkas", "Jumlah WC": 2, "Status": "Aktif", "Nomor HP": "081234567891", "Alamat": "RT 05 No. 15", "Keterangan": "Rumah Pribadi" },
+          { "ID Warga": "W003", "Nama": "Joko Widodo", "Jumlah WC": 1, "Status": "Aktif", "Nomor HP": "081234567892", "Alamat": "RT 05 No. 20", "Keterangan": "Rumah Pribadi" }
+        ];
+        state.pertemuan = [
+          { "ID Pertemuan": "P001", "Tanggal": "2026-06-10", "Keterangan": "Pertemuan Rutin Bulanan" },
+          { "ID Pertemuan": "P002", "Tanggal": "2026-07-04", "Keterangan": "Rapat Pertemuan IPAL & Kas" }
+        ];
+        state.pembayaran = [
+          { "ID Pembayaran": "TX001", "ID Pertemuan": "P001", "ID Warga": "W001", "Tanggal": "2026-06-10", "Arisan Dibayar": 10000, "IPAL Dibayar": 5000, "Jimpitan Dibayar": 3000, "Kas Sosial Dibayar": 5000, "Total Dibayar": 23000, "Keterangan": "Lunas", "User Input": "bendahara" },
+          { "ID Pembayaran": "TX002", "ID Pertemuan": "P001", "ID Warga": "W002", "Tanggal": "2026-06-10", "Arisan Dibayar": 10000, "IPAL Dibayar": 10000, "Jimpitan Dibayar": 6000, "Kas Sosial Dibayar": 10000, "Total Dibayar": 36000, "Keterangan": "Lunas + Deposit", "User Input": "bendahara" }
+        ];
+        state.pengeluaran = [
+          { "ID Pengeluaran": "EXP01", "Tanggal": "2026-06-15", "Jenis Kas": "IPAL", "Nominal": 15000, "Keterangan": "Pembelian Pipa Sambungan", "Penerima": "Toko Besi Maju", "Bukti Link": "", "User Input": "admin" }
+        ];
+        state.arisanDetail = [
+          { "ID Warga": "W001", "Total Bayar": 10000, "Status Arisan": "Belum Menang", "Tanggal Menang": "-" },
+          { "ID Warga": "W002", "Total Bayar": 10000, "Status Arisan": "Belum Menang", "Tanggal Menang": "-" },
+          { "ID Warga": "W003", "Total Bayar": 0, "Status Arisan": "Belum Menang", "Tanggal Menang": "-" }
+        ];
+        state.pengaturan = [
+          { "Kunci": "NOMINAL_JIMPITAN", "Nilai": "3000" },
+          { "Kunci": "NAMA_RT", "Nilai": "Rukun Tetangga 05 / RW 02" }
+        ];
+      }
+    }
+
+    // SISTEM PINTAR: PERHITUNGAN TRANSAKSI, DEPOSIT (BAYAR LEBIH), & TUNGGAKAN
+    let kalkulasiSistem = {
+      saldoArisan: 0,
+      saldoIpal: 0,
+      saldoJimpitan: 0,
+      saldoKasSosial: 0,
+      totalPemasukan: 0,
+      totalPengeluaran: 0,
+      tunggakan: [],
+      deposit: {}, // { ID_Warga: { arisan, ipal, jimpitan, kas_social } } sisa lebih pembayaran untuk pertemuan selanjutnya
+      notifikasi: []
+    };
+
+    function generateSistemPintar() {
+      // 1. Dapatkan Nilai Pengaturan
+      const jimpitanSetObj = state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN");
+      const jimpitanNominalAcuan = jimpitanSetObj ? Number(jimpitanSetObj.Nilai) : 3000;
+      
+      // Reset Kalkulasi
+      kalkulasiSistem = {
+        saldoArisan: 0, saldoIpal: 0, saldoJimpitan: 0, saldoKasSosial: 0,
+        totalPemasukan: 0, totalPengeluaran: 0,
+        tunggakan: [], deposit: {}, notifikasi: []
+      };
+
+      // Inisialisasi deposit & kalkulasi per warga
+      state.warga.forEach(w => {
+        kalkulasiSistem.deposit[w["ID Warga"]] = { arisan: 0, ipal: 0, jimpitan: 0, kasSosial: 0 };
+      });
+
+      // URUTKAN Pertemuan Berdasarkan Tanggal secara Menurun
+      const sortedPertemuan = [...state.pertemuan].sort((a,b) => new Date(a.Tanggal) - new Date(b.Tanggal));
+
+      // Lakukan simulasi alur pembayaran per pertemuan untuk menghitung TUNGGAKAN dan DEPOSIT aktual
+      sortedPertemuan.forEach(p => {
+        state.warga.forEach(w => {
+          const idW = w["ID Warga"];
+          const namaW = w.Nama;
+          
+          // Kewajiban per pertemuan
+          const wajibArisan = 10000;
+          const wajibIpal = 5000 * Number(w["Jumlah WC"]);
+          const wajibJimpitan = jimpitanNominalAcuan;
+          const wajibKasSosial = 5000;
+
+          // Dapatkan riwayat pembayaran warga pada pertemuan ini
+          const bayarList = state.pembayaran.filter(b => b["ID Pertemuan"] === p["ID Pertemuan"] && b["ID Warga"] === idW);
+          
+          // Akumulasikan pembayaran real pada tanggal tersebut
+          let realArisan = 0, realIpal = 0, realJimpitan = 0, realKasSosial = 0;
+          bayarList.forEach(b => {
+            realArisan += Number(b["Arisan Dibayar"]);
+            realIpal += Number(b["IPAL Dibayar"]);
+            realJimpitan += Number(b["Jimpitan Dibayar"]);
+            realKasSosial += Number(b["Kas Sosial Dibayar"]);
+          });
+
+          // TAMBAHKAN deposit dari pertemuan sebelumnya ke kas berjalan
+          let totalArisanAvail = realArisan + kalkulasiSistem.deposit[idW].arisan;
+          let totalIpalAvail = realIpal + kalkulasiSistem.deposit[idW].ipal;
+          let totalJimpitanAvail = realJimpitan + kalkulasiSistem.deposit[idW].jimpitan;
+          let totalKasSosialAvail = realKasSosial + kalkulasiSistem.deposit[idW].kasSosial;
+
+          // Hitung Sisa/Tunggakan atau Kelebihan (Deposit Baru)
+          // ARISAN
+          if (totalArisanAvail >= wajibArisan) {
+            kalkulasiSistem.deposit[idW].arisan = totalArisanAvail - wajibArisan;
+          } else {
+            kalkulasiSistem.tunggakan.push({ idW, namaW, jenis: 'Arisan', pertemuan: p.Tanggal, jumlah: wajibArisan - totalArisanAvail });
+            kalkulasiSistem.deposit[idW].arisan = 0;
+          }
+          // IPAL
+          if (totalIpalAvail >= wajibIpal) {
+            kalkulasiSistem.deposit[idW].ipal = totalIpalAvail - wajibIpal;
+          } else {
+            kalkulasiSistem.tunggakan.push({ idW, namaW, jenis: 'IPAL', pertemuan: p.Tanggal, jumlah: wajibIpal - totalIpalAvail });
+            kalkulasiSistem.deposit[idW].ipal = 0;
+          }
+          // JIMPITAN
+          if (totalJimpitanAvail >= wajibJimpitan) {
+            kalkulasiSistem.deposit[idW].jimpitan = totalJimpitanAvail - wajibJimpitan;
+          } else {
+            kalkulasiSistem.tunggakan.push({ idW, namaW, jenis: 'Jimpitan', pertemuan: p.Tanggal, jumlah: wajibJimpitan - totalJimpitanAvail });
+            kalkulasiSistem.deposit[idW].jimpitan = 0;
+          }
+          // KAS SOSIAL
+          if (totalKasSosialAvail >= wajibKasSosial) {
+            kalkulasiSistem.deposit[idW].kasSosial = totalKasSosialAvail - wajibKasSosial;
+          } else {
+            kalkulasiSistem.tunggakan.push({ idW, namaW, jenis: 'Kas Sosial', pertemuan: p.Tanggal, jumlah: wajibKasSosial - totalKasSosialAvail });
+            kalkulasiSistem.deposit[idW].kasSosial = 0;
+          }
+        });
+      });
+
+      // 2. Hitung Total Pemasukan Riil dari Kas
+      state.pembayaran.forEach(b => {
+        kalkulasiSistem.saldoArisan += Number(b["Arisan Dibayar"]);
+        kalkulasiSistem.saldoIpal += Number(b["IPAL Dibayar"]);
+        kalkulasiSistem.saldoJimpitan += Number(b["Jimpitan Dibayar"]);
+        kalkulasiSistem.saldoKasSosial += Number(b["Kas Sosial Dibayar"]);
+      });
+
+      kalkulasiSistem.totalPemasukan = kalkulasiSistem.saldoArisan + kalkulasiSistem.saldoIpal + kalkulasiSistem.saldoJimpitan + kalkulasiSistem.saldoKasSosial;
+
+      // 3. Kurangkan dengan Pengeluaran untuk masing-masing Kas
+      state.pengeluaran.forEach(e => {
+        const nominal = Number(e.Nominal);
+        kalkulasiSistem.totalPengeluaran += nominal;
+        
+        if (e["Jenis Kas"] === "Arisan") kalkulasiSistem.saldoArisan -= nominal;
+        else if (e["Jenis Kas"] === "IPAL") kalkulasiSistem.saldoIpal -= nominal;
+        else if (e["Jenis Kas"] === "Jimpitan") kalkulasiSistem.saldoJimpitan -= nominal;
+        else if (e["Jenis Kas"] === "Kas Sosial") kalkulasiSistem.saldoKasSosial -= nominal;
+      });
+
+      // 4. GENERASI NOTIFIKASI PINTAR (Anomali Saldo, Tunggakan, dsb)
+      if (kalkulasiSistem.saldoArisan < 20000) kalkulasiSistem.notifikasi.push({ tipe: 'warning', msg: `Saldo Kas Arisan kritis! Sisa Rp ${formatIDR(kalkulasiSistem.saldoArisan)}` });
+      if (kalkulasiSistem.saldoIpal < 20000) kalkulasiSistem.notifikasi.push({ tipe: 'warning', msg: `Saldo Kas IPAL kritis! Sisa Rp ${formatIDR(kalkulasiSistem.saldoIpal)}` });
+      if (kalkulasiSistem.saldoJimpitan < 20000) kalkulasiSistem.notifikasi.push({ tipe: 'warning', msg: `Saldo Kas Jimpitan kritis! Sisa Rp ${formatIDR(kalkulasiSistem.saldoJimpitan)}` });
+      if (kalkulasiSistem.saldoKasSosial < 20000) kalkulasiSistem.notifikasi.push({ tipe: 'warning', msg: `Saldo Kas Sosial kritis! Sisa Rp ${formatIDR(kalkulasiSistem.saldoKasSosial)}` });
+
+      // Hitung warga belum bayar di pertemuan terakhir
+      if (sortedPertemuan.length > 0) {
+        const pTerakhir = sortedPertemuan[sortedPertemuan.length - 1];
+        state.warga.forEach(w => {
+          const belumBayarLast = state.pembayaran.filter(b => b["ID Pertemuan"] === pTerakhir["ID Pertemuan"] && b["ID Warga"] === w["ID Warga"]).length === 0;
+          if (belumBayarLast) {
+            kalkulasiSistem.notifikasi.push({ tipe: 'info', msg: `Warga ${w.Nama} belum menyetor pembayaran di pertemuan terakhir (${pTerakhir.Tanggal})` });
+          }
+        });
+      }
+
+      // Notifikasi Kelebihan Bayar
+      Object.keys(kalkulasiSistem.deposit).forEach(idW => {
+        const dep = kalkulasiSistem.deposit[idW];
+        const w = state.warga.find(x => x["ID Warga"] === idW);
+        if (w && (dep.arisan > 0 || dep.ipal > 0 || dep.jimpitan > 0 || dep.kasSosial > 0)) {
+          kalkulasiSistem.notifikasi.push({ tipe: 'success', msg: `${w.Nama} memiliki akumulasi bayar lebih (deposit kas berikutnya).` });
+        }
+      });
+
+      // Update Notif Badge di Header
+      const badge = document.getElementById('notifBadge');
+      if (kalkulasiSistem.notifikasi.length > 0) {
+        badge.classList.remove('hidden');
+        badge.textContent = kalkulasiSistem.notifikasi.length;
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function formatIDR(val) {
+      return Number(val).toLocaleString('id-ID');
+    }
+
+    // DRAWER NOTIFIKASI SISI KANAN
+    function bukaNotifikasiPanel() {
+      const panel = document.getElementById('notifPanel');
+      const list = document.getElementById('notifList');
+      list.innerHTML = '';
+      
+      if (kalkulasiSistem.notifikasi.length === 0) {
+        list.innerHTML = `<div class="text-center py-8 text-slate-400 text-xs">Tidak ada notifikasi sistem saat ini.</div>`;
+      } else {
+        kalkulasiSistem.notifikasi.forEach(n => {
+          let icon = '<i class="fas fa-info-circle text-sky-500"></i>';
+          let bg = 'bg-sky-50 border-sky-100';
+          if (n.tipe === 'warning') {
+            icon = '<i class="fas fa-triangle-exclamation text-amber-500"></i>';
+            bg = 'bg-amber-50 border-amber-100';
+          } else if (n.tipe === 'success') {
+            icon = '<i class="fas fa-circle-check text-emerald-500"></i>';
+            bg = 'bg-emerald-50 border-emerald-100';
+          }
+          
+          list.innerHTML += `
+            <div class="p-3.5 border rounded-xl text-xs leading-relaxed ${bg} flex items-start space-x-2.5 shadow-sm">
+              <span class="mt-0.5">${icon}</span>
+              <span class="text-slate-700 font-medium">${n.msg}</span>
+            </div>
+          `;
+        });
+      }
+      
+      panel.classList.remove('translate-x-full');
+    }
+
+    function tutupNotifikasiPanel() {
+      document.getElementById('notifPanel').classList.add('translate-x-full');
+    }
+
+    // ================= DYNAMIC RENDERING MODULE AREA =================
+    function renderContentArea() {
+      const area = document.getElementById('workspace');
+      area.innerHTML = ''; // bersihkan workspace
+
+      // Dapatkan nama RT
+      const namaRtObj = state.pengaturan.find(p => p.Kunci === "NAMA_RT");
+      const namaRt = namaRtObj ? namaRtObj.Nilai : "Rukun Tetangga 05";
+
+      switch(state.activeMenu) {
+        case 'dashboard':
+          renderDashboard(area, namaRt);
+          break;
+        case 'master_warga':
+          renderMasterWarga(area);
+          break;
+        case 'pertemuan':
+          renderPertemuan(area);
+          break;
+        case 'input_pembayaran':
+          renderInputPembayaran(area);
+          break;
+        case 'arisan':
+          renderArisan(area);
+          break;
+        case 'ipal':
+          renderIpal(area);
+          break;
+        case 'jimpitan':
+          renderJimpitan(area);
+          break;
+        case 'kas_social':
+          renderKasSosial(area);
+          break;
+        case 'pengeluaran':
+          renderPengeluaran(area);
+          break;
+        case 'laporan':
+          renderLaporan(area);
+          break;
+        case 'histori_warga':
+          renderHistoriWarga(area);
+          break;
+        case 'pengaturan':
+          renderPengaturan(area);
+          break;
+        case 'backup':
+          renderBackup(area);
+          break;
+      }
+    }
+
+    // MODULE 1: DASHBOARD
+    function renderDashboard(target, title) {
+      // Hitung Total WC, total warga, dsb
+      const totalWarga = state.warga.length;
+      const totalWc = state.warga.reduce((acc, curr) => acc + Number(curr["Jumlah WC"]), 0);
+      const totalTunggakanIdr = kalkulasiSistem.tunggakan.reduce((acc, curr) => acc + curr.jumlah, 0);
+
+      // Template Grid Dashboard
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+            <div>
+              <h2 class="text-2xl font-black text-slate-900 tracking-tight">DASHBOARD UTAMA</h2>
+              <p class="text-sm text-slate-500 font-medium">Selamat datang, <span class="text-teal-600 font-bold">${state.user.nama}</span> | ${title}</p>
+            </div>
+            <button onclick="refreshDataSistem('Mensinkronkan data terbaru...')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center transition-all">
+              <i class="fas fa-sync-alt mr-2"></i> Sinkron Data
+            </button>
+          </div>
+
+          <!-- KARTU STATISTIK ATAS -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+              <div class="p-4 bg-teal-500/10 text-teal-600 rounded-2xl text-2xl"><i class="fas fa-users"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Warga</p>
+                <h3 class="text-xl font-extrabold text-slate-800">${totalWarga} Jiwa</h3>
+              </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+              <div class="p-4 bg-indigo-500/10 text-indigo-600 rounded-2xl text-2xl"><i class="fas fa-toilet"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Jamban/WC</p>
+                <h3 class="text-xl font-extrabold text-slate-800">${totalWc} unit</h3>
+              </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+              <div class="p-4 bg-emerald-500/10 text-emerald-600 rounded-2xl text-2xl"><i class="fas fa-wallet"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Pemasukan</p>
+                <h3 class="text-xl font-extrabold text-slate-800">Rp ${formatIDR(kalkulasiSistem.totalPemasukan)}</h3>
+              </div>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
+              <div class="p-4 bg-rose-500/10 text-rose-600 rounded-2xl text-2xl"><i class="fas fa-file-invoice"></i></div>
+              <div>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tunggakan Kas</p>
+                <h3 class="text-xl font-extrabold text-rose-600">Rp ${formatIDR(totalTunggakanIdr)}</h3>
+              </div>
+            </div>
+          </div>
+
+          <!-- KARTU SALDO DETAIL -->
+          <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest pt-2">Posisi Kas Berjalan</h4>
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-tr from-cyan-500 to-teal-600 p-5 rounded-2xl text-white shadow-md relative overflow-hidden">
+              <div class="absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"><i class="fas fa-rotate"></i></div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Saldo Kas Arisan</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(kalkulasiSistem.saldoArisan)}</h3>
+            </div>
+            <div class="bg-gradient-to-tr from-sky-500 to-indigo-600 p-5 rounded-2xl text-white shadow-md relative overflow-hidden">
+              <div class="absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"><i class="fas fa-faucet-drip"></i></div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Saldo Kas IPAL</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(kalkulasiSistem.saldoIpal)}</h3>
+            </div>
+            <div class="bg-gradient-to-tr from-amber-500 to-orange-600 p-5 rounded-2xl text-white shadow-md relative overflow-hidden">
+              <div class="absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"><i class="fas fa-sack-dollar"></i></div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Saldo Kas Jimpitan</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(kalkulasiSistem.saldoJimpitan)}</h3>
+            </div>
+            <div class="bg-gradient-to-tr from-rose-500 to-pink-600 p-5 rounded-2xl text-white shadow-md relative overflow-hidden">
+              <div class="absolute right-[-10px] bottom-[-10px] text-white/10 text-7xl"><i class="fas fa-hand-holding-heart"></i></div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Saldo Kas Sosial</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(kalkulasiSistem.saldoKasSosial)}</h3>
+            </div>
+          </div>
+
+          <!-- VISUALISASI GRAFIK -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm lg:col-span-2 space-y-4">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-slate-900 text-sm">Grafik Ringkasan Keuangan RT</span>
+                <span class="text-[10px] bg-teal-50 text-teal-600 font-extrabold px-2.5 py-1 rounded-full uppercase">Real-time</span>
+              </div>
+              <div class="h-64 relative">
+                <canvas id="grafikUtama"></canvas>
+              </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="font-bold text-slate-900 text-sm block mb-4">Proporsi Pemasukan Kas</span>
+                <div class="h-48 relative">
+                  <canvas id="grafikDonut"></canvas>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+                <div class="flex items-center"><span class="w-3 h-3 bg-teal-500 rounded-full mr-1.5"></span> Arisan</div>
+                <div class="flex items-center"><span class="w-3 h-3 bg-indigo-500 rounded-full mr-1.5"></span> IPAL</div>
+                <div class="flex items-center"><span class="w-3 h-3 bg-amber-500 rounded-full mr-1.5"></span> Jimpitan</div>
+                <div class="flex items-center"><span class="w-3 h-3 bg-rose-500 rounded-full mr-1.5"></span> Sosial</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DETAIL LISTING TRANSAKSI & TUNGGAKAN -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Transaksi Terakhir -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <span class="font-bold text-slate-900 text-sm block">Riwayat Transaksi Terakhir</span>
+              <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-left text-slate-600">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-400 font-bold uppercase border-b border-slate-100">
+                      <th class="p-3">Tanggal</th>
+                      <th class="p-3">Warga / Jenis</th>
+                      <th class="p-3 text-right">Nominal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${state.pembayaran.slice(-5).reverse().map(b => {
+                      const w = state.warga.find(x => x["ID Warga"] === b["ID Warga"]);
+                      return `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50/50">
+                          <td class="p-3">${b.Tanggal}</td>
+                          <td class="p-3 font-semibold text-slate-800">${w ? w.Nama : 'Warga'} <br><span class="text-[10px] text-teal-500">Iuran Bulanan</span></td>
+                          <td class="p-3 text-right font-bold text-emerald-600">+Rp ${formatIDR(b["Total Dibayar"])}</td>
+                        </tr>
+                      `;
+                    }).join('') || '<tr><td colspan="3" class="text-center p-3 text-slate-400">Belum ada transaksi</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Daftar Tunggakan Terbanyak -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-slate-900 text-sm">Daftar Tunggakan Warga</span>
+                <span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">${kalkulasiSistem.tunggakan.length} Kas</span>
+              </div>
+              <div class="overflow-x-auto max-h-60 custom-scrollbar">
+                <table class="w-full text-xs text-left text-slate-600">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-400 font-bold uppercase border-b border-slate-100">
+                      <th class="p-3">Warga</th>
+                      <th class="p-3">Jenis Kas / Tanggal</th>
+                      <th class="p-3 text-right">Menunggak</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${kalkulasiSistem.tunggakan.slice(0, 5).map(t => `
+                      <tr class="border-b border-slate-50 hover:bg-slate-50/50">
+                        <td class="p-3 font-semibold text-slate-800">${t.namaW}</td>
+                        <td class="p-3">${t.jenis} <span class="text-[10px] text-slate-400">(${t.pertemuan})</span></td>
+                        <td class="p-3 text-right font-bold text-rose-500">Rp ${formatIDR(t.jumlah)}</td>
+                      </tr>
+                    `).join('') || '<tr><td colspan="3" class="text-center p-3 text-slate-400">Tidak ada tunggakan iuran</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Render Grafik Dashboard
+      initDashboardCharts();
+    }
+
+    function initDashboardCharts() {
+      const canvasUtama = document.getElementById('grafikUtama');
+      const canvasDonut = document.getElementById('grafikDonut');
+      if (!canvasUtama || !canvasDonut) return;
+
+      // Ambil riwayat bulanan (berdasarkan record transaksi pembayaran)
+      let bulanData = {};
+      state.pembayaran.forEach(b => {
+        let bln = b.Tanggal.substring(0, 7); // yyyy-MM
+        if(!bulanData[bln]) bulanData[bln] = { masuk: 0, keluar: 0 };
+        bulanData[bln].masuk += Number(b["Total Dibayar"]);
+      });
+
+      state.pengeluaran.forEach(e => {
+        let bln = e.Tanggal.substring(0, 7);
+        if(!bulanData[bln]) bulanData[bln] = { masuk: 0, keluar: 0 };
+        bulanData[bln].keluar += Number(e.Nominal);
+      });
+
+      let labelBulan = Object.keys(bulanData).sort();
+      let datasetMasuk = labelBulan.map(l => bulanData[l].masuk);
+      let datasetKeluar = labelBulan.map(l => bulanData[l].keluar);
+      let datasetSaldo = labelBulan.map((l, i) => {
+        let totalM = datasetMasuk.slice(0, i+1).reduce((a,b)=>a+b, 0);
+        let totalK = datasetKeluar.slice(0, i+1).reduce((a,b)=>a+b, 0);
+        return totalM - totalK;
+      });
+
+      new Chart(canvasUtama, {
+        type: 'line',
+        data: {
+          labels: labelBulan,
+          datasets: [
+            { label: 'Pemasukan', data: datasetMasuk, borderColor: '#10b981', backgroundColor: '#10b981/10', borderWidth: 2, tension: 0.3 },
+            { label: 'Pengeluaran', data: datasetKeluar, borderColor: '#f43f5e', backgroundColor: '#f43f5e/10', borderWidth: 2, tension: 0.3 },
+            { label: 'Sisa Saldo Kas', data: datasetSaldo, borderColor: '#6366f1', borderWidth: 2, borderDash: [5, 5], tension: 0.1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { font: { family: 'Plus Jakarta Sans', size: 10 } } } }
+        }
+      });
+
+      new Chart(canvasDonut, {
+        type: 'doughnut',
+        data: {
+          labels: ['Arisan', 'IPAL', 'Jimpitan', 'Sosial'],
+          datasets: [{
+            data: [
+              state.pembayaran.reduce((a, b) => a + Number(b["Arisan Dibayar"]), 0),
+              state.pembayaran.reduce((a, b) => a + Number(b["IPAL Dibayar"]), 0),
+              state.pembayaran.reduce((a, b) => a + Number(b["Jimpitan Dibayar"]), 0),
+              state.pembayaran.reduce((a, b) => a + Number(b["Kas Sosial Dibayar"]), 0)
+            ],
+            backgroundColor: ['#14b8a6', '#6366f1', '#f59e0b', '#f43f5e']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // MODULE 2: MASTER WARGA
+    function renderMasterWarga(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">MANAJEMEN DATA WARGA</h2>
+              <p class="text-xs text-slate-500 font-medium">Tambah, edit, atau hapus data warga RT.</p>
+            </div>
+            <button onclick="bukaModalWarga()" class="px-4.5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-xl flex items-center shadow-md transition-all">
+              <i class="fas fa-plus mr-2"></i> Tambah Warga Baru
+            </button>
+          </div>
+
+          <!-- TABEL WARGA -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Daftar Warga Terdaftar</span>
+              <div class="relative max-w-xs w-full">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fas fa-search"></i></span>
+                <input type="text" id="cariWarga" onkeyup="filterWarga()" class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none" placeholder="Cari nama warga...">
+              </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table id="tabelWarga" class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">Nama</th>
+                    <th class="p-4">Jumlah WC</th>
+                    <th class="p-4">No. HP</th>
+                    <th class="p-4">Alamat</th>
+                    <th class="p-4">Keterangan</th>
+                    <th class="p-4 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.warga.map(w => `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                      <td class="p-4 font-bold text-slate-800">${w.Nama}</td>
+                      <td class="p-4 font-semibold">${w["Jumlah WC"]} WC</td>
+                      <td class="p-4">${w["Nomor HP"]}</td>
+                      <td class="p-4">${w.Alamat}</td>
+                      <td class="p-4 text-slate-400 italic">${w.Keterangan || '-'}</td>
+                      <td class="p-4 text-center flex justify-center space-x-2">
+                        <button onclick="bukaModalWarga('${w["ID Warga"]}')" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button onclick="hapusWargaSistem('${w["ID Warga"]}')" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg" title="Hapus"><i class="fas fa-trash"></i></button>
+                      </td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="6" class="p-6 text-center text-slate-400 font-medium">Belum ada data warga.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL EDIT/TAMBAH WARGA -->
+        <div id="modalWarga" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 class="text-base font-extrabold text-slate-900 mb-4" id="modalWargaTitle">Tambah Warga Baru</h3>
+            <form id="formWarga" onsubmit="simpanWargaSistem(event)" class="space-y-4">
+              <input type="hidden" id="formWargaId">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Nama Lengkap</label>
+                <input type="text" id="formWargaNama" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Jumlah WC/Jamban</label>
+                <input type="number" id="formWargaWc" required min="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none" placeholder="Minimal 1">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Nomor HP / WhatsApp</label>
+                <input type="text" id="formWargaHp" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Alamat Rumah</label>
+                <input type="text" id="formWargaAlamat" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Keterangan</label>
+                <input type="text" id="formWargaKet" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                <button type="button" onclick="tutupModalWarga()" class="px-4 py-2 text-slate-400 hover:bg-slate-50 rounded-lg text-xs font-bold">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-xs font-bold">Simpan Data</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function bukaModalWarga(id = '') {
+      const modal = document.getElementById('modalWarga');
+      const form = document.getElementById('formWarga');
+      const title = document.getElementById('modalWargaTitle');
+      
+      form.reset();
+      document.getElementById('formWargaId').value = id;
+
+      if (id) {
+        title.textContent = "Edit Data Warga";
+        const w = state.warga.find(x => x["ID Warga"] === id);
+        if (w) {
+          document.getElementById('formWargaNama').value = w.Nama;
+          document.getElementById('formWargaWc').value = w["Jumlah WC"];
+          document.getElementById('formWargaHp').value = w["Nomor HP"];
+          document.getElementById('formWargaAlamat').value = w.Alamat;
+          document.getElementById('formWargaKet').value = w.Keterangan || '';
+        }
+      } else {
+        title.textContent = "Tambah Warga Baru";
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function tutupModalWarga() {
+      document.getElementById('modalWarga').classList.add('hidden');
+    }
+
+    function simpanWargaSistem(e) {
+      e.preventDefault();
+      const id = document.getElementById('formWargaId').value;
+      const payload = {
+        isEdit: !!id,
+        idWarga: id,
+        nama: document.getElementById('formWargaNama').value.trim(),
+        jumlahWc: Number(document.getElementById('formWargaWc').value),
+        status: "Aktif",
+        nomorHp: document.getElementById('formWargaHp').value.trim(),
+        alamat: document.getElementById('formWargaAlamat').value.trim(),
+        keterangan: document.getElementById('formWargaKet').value.trim(),
+        userOperator: state.user.username
+      };
+
+      if (payload.jumlahWc < 0) {
+        showToast("Jumlah WC tidak boleh bernilai negatif!", true);
+        return;
+      }
+
+      showLoader(true, 'Menyimpan data warga...');
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              tutupModalWarga();
+              refreshDataSistem("Data warga berhasil diperbarui!");
+            } else {
+              showLoader(false);
+              showToast(res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal: " + err, true);
+          })
+          .executeAction("simpanWarga", payload);
+      } else {
+        // Simulasi offline
+        setTimeout(() => {
+          if (payload.isEdit) {
+            const index = state.warga.findIndex(w => w["ID Warga"] === payload.idWarga);
+            if (index !== -1) state.warga[index] = { ...state.warga[index], ...payload, "Jumlah WC": payload.jumlahWc };
+          } else {
+            const newId = "W" + String(new Date().getTime()).slice(-4);
+            state.warga.push({ "ID Warga": newId, "Nama": payload.nama, "Jumlah WC": payload.jumlahWc, "Status": payload.status, "Nomor HP": payload.nomorHp, "Alamat": payload.alamat, "Keterangan": payload.keterangan });
+            state.arisanDetail.push({ "ID Warga": newId, "Total Bayar": 0, "Status Arisan": "Belum Menang", "Tanggal Menang": "-" });
+          }
+          tutupModalWarga();
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+          showToast("Simulasi simpan warga berhasil!");
+        }, 500);
+      }
+    }
+
+    function hapusWargaSistem(id) {
+      showConfirm("Hapus Data Warga", "Apakah Anda yakin ingin menghapus data warga ini? Seluruh riwayat transaksi tidak akan terhapus namun warga tidak muncul pada daftar pertemuan.", () => {
+        showLoader(true, 'Menghapus data warga...');
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(() => {
+              refreshDataSistem("Data warga berhasil dihapus");
+            })
+            .withFailureHandler((err) => {
+              showLoader(false);
+              showToast("Gagal menghapus: " + err, true);
+            })
+            .executeAction("hapusWarga", { idWarga: id, userOperator: state.user.username });
+        } else {
+          setTimeout(() => {
+            state.warga = state.warga.filter(w => w["ID Warga"] !== id);
+            generateSistemPintar();
+            renderContentArea();
+            showLoader(false);
+            showToast("Simulasi hapus warga berhasil!");
+          }, 500);
+        }
+      });
+    }
+
+    function filterWarga() {
+      const input = document.getElementById('cariWarga').value.toLowerCase();
+      const rows = document.getElementById('tabelWarga').getElementsByTagName('tbody')[0].rows;
+      for (let i = 0; i < rows.length; i++) {
+        const text = rows[i].cells[0].textContent.toLowerCase();
+        rows[i].style.display = text.includes(input) ? '' : 'none';
+      }
+    }
+
+    // MODULE 3: PERTEMUAN RT
+    function renderPertemuan(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">PERTEMUAN BULANAN RT</h2>
+              <p class="text-xs text-slate-500 font-medium">Buat/kelola tanggal rapat iuran warga bulanan.</p>
+            </div>
+            <button onclick="bukaModalPertemuan()" class="px-4.5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-xl flex items-center shadow-md transition-all">
+              <i class="fas fa-plus mr-2"></i> Buat Pertemuan Baru
+            </button>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Histori Jadwal Pertemuan</span>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">ID Pertemuan</th>
+                    <th class="p-4">Tanggal Acara</th>
+                    <th class="p-4">Keterangan / Agenda</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.pertemuan.map(p => `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                      <td class="p-4 font-bold text-teal-600">${p["ID Pertemuan"]}</td>
+                      <td class="p-4 font-bold text-slate-800">${p.Tanggal}</td>
+                      <td class="p-4 text-slate-600 font-medium">${p.Keterangan || '-'}</td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="3" class="p-6 text-center text-slate-400 font-medium">Belum ada pertemuan terdaftar.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="modalPertemuan" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 class="text-base font-extrabold text-slate-900 mb-4">Buat Jadwal Rapat Baru</h3>
+            <form onsubmit="simpanPertemuanSistem(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Tanggal Acara</label>
+                <input type="date" id="formPertemuanTgl" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Agenda / Keterangan</label>
+                <input type="text" id="formPertemuanKet" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                <button type="button" onclick="tutupModalPertemuan()" class="px-4 py-2 text-slate-400 hover:bg-slate-50 rounded-lg text-xs font-bold">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-xs font-bold">Buat Pertemuan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function bukaModalPertemuan() {
+      document.getElementById('modalPertemuan').classList.remove('hidden');
+    }
+    function tutupModalPertemuan() {
+      document.getElementById('modalPertemuan').classList.add('hidden');
+    }
+
+    function simpanPertemuanSistem(e) {
+      e.preventDefault();
+      const tgl = document.getElementById('formPertemuanTgl').value;
+      const ket = document.getElementById('formPertemuanKet').value.trim();
+
+      showLoader(true, 'Menyimpan jadwal pertemuan...');
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              tutupModalPertemuan();
+              refreshDataSistem("Jadwal pertemuan berhasil disimpan!");
+            } else {
+              showLoader(false);
+              showToast(res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal: " + err, true);
+          })
+          .executeAction("simpanPertemuan", { tanggal: tgl, keterangan: ket, userOperator: state.user.username });
+      } else {
+        setTimeout(() => {
+          const newId = "P" + String(new Date().getTime()).slice(-4);
+          state.pertemuan.push({ "ID Pertemuan": newId, "Tanggal": tgl, "Keterangan": ket });
+          tutupModalPertemuan();
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+          showToast("Simulasi simpan pertemuan berhasil!");
+        }, 500);
+      }
+    }
+
+    // MODULE 4: INPUT PEMBAYARAN TERPADU
+    function renderInputPembayaran(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">KONTROL INPUT PEMBAYARAN WARGA</h2>
+            <p class="text-xs text-slate-500 font-medium">Pilih tanggal pertemuan untuk menginput atau memperbarui iuran iuran warga secara massal.</p>
+          </div>
+
+          <!-- PEMILIHAN PERTEMUAN -->
+          <div class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <div class="w-full sm:max-w-xs">
+              <label class="block text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-1">Tanggal Acara Pertemuan</label>
+              <select id="pilihPertemuanBayar" onchange="loadFormMassalWarga()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+                <option value="">-- Pilih Jadwal Pertemuan --</option>
+                ${state.pertemuan.map(p => `<option value="${p["ID Pertemuan"]}">${p.Tanggal} - ${p.Keterangan}</option>`).join('')}
+              </select>
+            </div>
+            <div class="text-xs text-slate-400 italic">
+              * Seluruh warga akan ditampilkan secara otomatis beserta kalkulasi kewajiban masing-masing.
+            </div>
+          </div>
+
+          <!-- DAFTAR MASUKAN DATA WARGA MASSAL -->
+          <div id="formMassalArea" class="hidden space-y-4">
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-left text-slate-600">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-400 font-extrabold uppercase border-b border-slate-100">
+                      <th class="p-4">Warga & WC</th>
+                      <th class="p-4 text-center">Arisan (Wajib Rp10k)</th>
+                      <th class="p-4 text-center">IPAL (Rp5k x WC)</th>
+                      <th class="p-4 text-center">Jimpitan (Wajib)</th>
+                      <th class="p-4 text-center">Kas Sosial (Wajib Rp5k)</th>
+                      <th class="p-4">Keterangan Tambahan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pembayaranBulkRows">
+                    <!-- Dihasilkan dinamis -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="flex justify-end">
+              <button onclick="simpanPembayaranMassal()" class="px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-teal-500/10 transition-all">
+                <i class="fas fa-check-double mr-2"></i> Simpan Seluruh Iuran Pertemuan
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function loadFormMassalWarga() {
+      const pId = document.getElementById('pilihPertemuanBayar').value;
+      const area = document.getElementById('formMassalArea');
+      const container = document.getElementById('pembayaranBulkRows');
+      
+      if (!pId) {
+        area.classList.add('hidden');
+        return;
+      }
+
+      const pObj = state.pertemuan.find(x => x["ID Pertemuan"] === pId);
+      const jimpNom = state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN") ? Number(state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN").Nilai) : 3000;
+      
+      container.innerHTML = '';
+      
+      state.warga.forEach(w => {
+        const idW = w["ID Warga"];
+        const wcCount = Number(w["Jumlah WC"]);
+        
+        // Cek apakah sudah pernah diinput untuk pertemuan ini
+        const dataEx = state.pembayaran.find(b => b["ID Pertemuan"] === pId && b["ID Warga"] === idW);
+        
+        // Kewajiban standar
+        const wajibArisan = 10000;
+        const wajibIpal = 5000 * wcCount;
+        const wajibJimpitan = jimpNom;
+        const wajibKasSosial = 5000;
+
+        // Tampilkan kewajiban sebagai placeholder atau data lama
+        const valArisan = dataEx ? Number(dataEx["Arisan Dibayar"]) : wajibArisan;
+        const valIpal = dataEx ? Number(dataEx["IPAL Dibayar"]) : wajibIpal;
+        const valJimpitan = dataEx ? Number(dataEx["Jimpitan Dibayar"]) : wajibJimpitan;
+        const valKasSosial = dataEx ? Number(dataEx["Kas Sosial Dibayar"]) : wajibKasSosial;
+        const ket = dataEx ? dataEx.Keterangan : '';
+
+        // Tampilkan info deposit jika ada
+        const depArisan = kalkulasiSistem.deposit[idW]?.arisan || 0;
+        const depIpal = kalkulasiSistem.deposit[idW]?.ipal || 0;
+        const depJimp = kalkulasiSistem.deposit[idW]?.jimpitan || 0;
+        const depSos = kalkulasiSistem.deposit[idW]?.kasSosial || 0;
+
+        container.innerHTML += `
+          <tr class="border-b border-slate-100 align-middle" data-idw="${idW}">
+            <td class="p-4">
+              <div class="font-bold text-slate-800">${w.Nama}</div>
+              <div class="text-[10px] text-slate-400 font-semibold">${wcCount} WC (${w.Alamat})</div>
+              ${(depArisan+depIpal+depJimp+depSos) > 0 ? `<div class="text-[9px] bg-teal-50 text-teal-600 px-1.5 py-0.5 rounded inline-block mt-1 font-bold">Ada Deposit!</div>` : ''}
+            </td>
+            <td class="p-4 text-center">
+              <div class="text-[10px] text-slate-400 mb-0.5">Kewajiban: Rp ${formatIDR(wajibArisan)}</div>
+              <input type="number" class="val-arisan w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center text-xs font-bold focus:outline-none" value="${valArisan}">
+              ${depArisan > 0 ? `<div class="text-[9px] text-teal-600 font-bold mt-1">Dep: +Rp${formatIDR(depArisan)}</div>` : ''}
+            </td>
+            <td class="p-4 text-center">
+              <div class="text-[10px] text-slate-400 mb-0.5">Kewajiban: Rp ${formatIDR(wajibIpal)}</div>
+              <input type="number" class="val-ipal w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center text-xs font-bold focus:outline-none" value="${valIpal}">
+              ${depIpal > 0 ? `<div class="text-[9px] text-teal-600 font-bold mt-1">Dep: +Rp${formatIDR(depIpal)}</div>` : ''}
+            </td>
+            <td class="p-4 text-center">
+              <div class="text-[10px] text-slate-400 mb-0.5">Kewajiban: Rp ${formatIDR(wajibJimpitan)}</div>
+              <input type="number" class="val-jimpitan w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center text-xs font-bold focus:outline-none" value="${valJimpitan}">
+              ${depJimp > 0 ? `<div class="text-[9px] text-teal-600 font-bold mt-1">Dep: +Rp${formatIDR(depJimp)}</div>` : ''}
+            </td>
+            <td class="p-4 text-center">
+              <div class="text-[10px] text-slate-400 mb-0.5">Kewajiban: Rp ${formatIDR(wajibKasSosial)}</div>
+              <input type="number" class="val-sosial w-28 px-2 py-1 bg-slate-50 border border-slate-200 rounded text-center text-xs font-bold focus:outline-none" value="${valKasSosial}">
+              ${depSos > 0 ? `<div class="text-[9px] text-teal-600 font-bold mt-1">Dep: +Rp${formatIDR(depSos)}</div>` : ''}
+            </td>
+            <td class="p-4">
+              <input type="text" class="val-ket w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded text-xs focus:outline-none" placeholder="Catatan..." value="${ket}">
+            </td>
+          </tr>
+        `;
+      });
+      
+      area.classList.remove('hidden');
+    }
+
+    function simpanPembayaranMassal() {
+      const pId = document.getElementById('pilihPertemuanBayar').value;
+      const pObj = state.pertemuan.find(x => x["ID Pertemuan"] === pId);
+      const rows = document.getElementById('pembayaranBulkRows').getElementsByTagName('tr');
+      const pembayaranList = [];
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const idW = row.getAttribute('data-idw');
+        const arisan = Number(row.querySelector('.val-arisan').value);
+        const ipal = Number(row.querySelector('.val-ipal').value);
+        const jimpitan = Number(row.querySelector('.val-jimpitan').value);
+        const kasSosial = Number(row.querySelector('.val-sosial').value);
+        const keterangan = row.querySelector('.val-ket').value.trim();
+
+        if (arisan < 0 || ipal < 0 || jimpitan < 0 || kasSosial < 0) {
+          showToast("Nominal tidak boleh bernilai negatif!", true);
+          return;
+        }
+
+        pembayaranList.push({ idWarga: idW, arisan, ipal, jimpitan, kasSosial, keterangan });
+      }
+
+      showLoader(true, 'Menyimpan seluruh kas pembayaran...');
+      
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              refreshDataSistem("Seluruh data pembayaran berhasil dimasukkan!");
+            } else {
+              showLoader(false);
+              showToast(res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal menyimpan: " + err, true);
+          })
+          .executeAction("simpanPembayaranBulk", { idPertemuan: pId, tanggal: pObj.Tanggal, pembayaranList, userOperator: state.user.username });
+      } else {
+        setTimeout(() => {
+          // Simulasi offline
+          pembayaranList.forEach(item => {
+            const idB = "TX" + Math.floor(Math.random() * 10000);
+            const total = item.arisan + item.ipal + item.jimpitan + item.kasSosial;
+            state.pembayaran.push({
+              "ID Pembayaran": idB, "ID Pertemuan": pId, "ID Warga": item.idWarga, "Tanggal": pObj.Tanggal,
+              "Arisan Dibayar": item.arisan, "IPAL Dibayar": item.ipal, "Jimpitan Dibayar": item.jimpitan, "Kas Sosial Dibayar": item.kasSosial,
+              "Total Dibayar": total, "Keterangan": item.keterangan, "User Input": state.user.username
+            });
+            
+            // Tambah tabungan arisan
+            const aDet = state.arisanDetail.find(a => a["ID Warga"] === item.idWarga);
+            if (aDet) aDet["Total Bayar"] = Number(aDet["Total Bayar"]) + item.arisan;
+          });
+          
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+          showToast("Simulasi simpan pembayaran bulk sukses!");
+        }, 500);
+      }
+    }
+
+    // MODULE 5: ARISAN WARGA
+    function renderArisan(target) {
+      // Hitung pemasukan / pengeluaran arisan
+      const tMasuk = state.pembayaran.reduce((a, b) => a + Number(b["Arisan Dibayar"]), 0);
+      const tKeluar = state.pengeluaran.filter(e => e["Jenis Kas"] === "Arisan").reduce((a, b) => a + Number(b.Nominal), 0);
+      const saldoAr = tMasuk - tKeluar;
+
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">KONTROL ARISAN RT</h2>
+              <p class="text-xs text-slate-500 font-medium">Iuran Rp10.000 / pertemuan. Saldo otomatis nol jika status sudah diberikan.</p>
+            </div>
+          </div>
+
+          <!-- KARTU SALDO ARISAN -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Kas Arisan</p>
+              <h3 class="text-lg font-black text-slate-800 mt-1">Rp ${formatIDR(tMasuk)}</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Arisan Didistribusikan</p>
+              <h3 class="text-lg font-black text-rose-500 mt-1">Rp ${formatIDR(tKeluar)}</h3>
+            </div>
+            <div class="bg-teal-500 p-5 rounded-2xl text-white shadow-md">
+              <p class="text-[10px] text-teal-100 font-bold uppercase tracking-wider">Saldo Arisan Berjalan</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(saldoAr)}</h3>
+            </div>
+          </div>
+
+          <!-- DAFTAR PESERTA DAN STATUS PEMENANG -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Status Tabungan & Pemenang</span>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">Warga</th>
+                    <th class="p-4 text-center">Tabungan Terkumpul</th>
+                    <th class="p-4">Tanggal Menang</th>
+                    <th class="p-4 text-center">Status Arisan</th>
+                    <th class="p-4 text-center">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.arisanDetail.map(a => {
+                    const w = state.warga.find(x => x["ID Warga"] === a["ID Warga"]);
+                    if (!w) return '';
+                    
+                    let badgeColor = "bg-slate-100 text-slate-600";
+                    if (a["Status Arisan"] === "Menang - Belum Diberikan") badgeColor = "bg-amber-100 text-amber-700 animate-pulse";
+                    else if (a["Status Arisan"] === "Sudah Diberikan") badgeColor = "bg-emerald-100 text-emerald-700";
+
+                    return `
+                      <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                        <td class="p-4 font-bold text-slate-800">${w.Nama}</td>
+                        <td class="p-4 text-center font-semibold text-teal-600">Rp ${formatIDR(a["Total Bayar"])}</td>
+                        <td class="p-4 font-medium">${a["Tanggal Menang"] || '-'}</td>
+                        <td class="p-4 text-center">
+                          <span class="px-2.5 py-1 text-[10px] font-bold rounded-full ${badgeColor}">${a["Status Arisan"]}</span>
+                        </td>
+                        <td class="p-4 text-center">
+                          <select onchange="updateArisanWarga('${a["ID Warga"]}', this.value)" class="px-2 py-1 bg-slate-100 border border-slate-200 rounded text-xs focus:outline-none">
+                            <option value="Belum Menang" ${a["Status Arisan"] === 'Belum Menang' ? 'selected' : ''}>Belum Menang</option>
+                            <option value="Menang - Belum Diberikan" ${a["Status Arisan"] === 'Menang - Belum Diberikan' ? 'selected' : ''}>Kocok Menang</option>
+                            <option value="Sudah Diberikan" ${a["Status Arisan"] === 'Sudah Diberikan' ? 'selected' : ''}>Telah Diberikan (Saldo=0)</option>
+                          </select>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateArisanWarga(idW, val) {
+      showLoader(true, 'Memproses perubahan arisan...');
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(() => {
+            refreshDataSistem("Status arisan warga diperbarui!");
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal: " + err, true);
+          })
+          .executeAction("updateStatusArisan", { idWarga: idW, status: val, userOperator: state.user.username });
+      } else {
+        setTimeout(() => {
+          const a = state.arisanDetail.find(x => x["ID Warga"] === idW);
+          if (a) {
+            a["Status Arisan"] = val;
+            a["Tanggal Menang"] = val === "Belum Menang" ? "-" : new Date().toISOString().split('T')[0];
+          }
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+          showToast("Simulasi update status arisan berhasil!");
+        }, 400);
+      }
+    }
+
+    // MODULE 6: KAS IPAL (BERDASARKAN JUMLAH WC)
+    function renderIpal(target) {
+      const tMasuk = state.pembayaran.reduce((a, b) => a + Number(b["IPAL Dibayar"]), 0);
+      const tKeluar = state.pengeluaran.filter(e => e["Jenis Kas"] === "IPAL").reduce((a, b) => a + Number(b.Nominal), 0);
+      const saldoIpal = tMasuk - tKeluar;
+
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">KAS PENGELOLAAN IPAL</h2>
+            <p class="text-xs text-slate-500 font-medium">Beban kewajiban: Rp5.000 x Jumlah WC warga. Sisa pembayaran dialokasikan ke periode selanjutnya.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Kas IPAL Masuk</p>
+              <h3 class="text-lg font-black text-slate-800 mt-1">Rp ${formatIDR(tMasuk)}</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Pengeluaran IPAL</p>
+              <h3 class="text-lg font-black text-rose-500 mt-1">Rp ${formatIDR(tKeluar)}</h3>
+            </div>
+            <div class="bg-indigo-500 p-5 rounded-2xl text-white shadow-md">
+              <p class="text-[10px] text-indigo-100 font-bold uppercase tracking-wider">Saldo IPAL Lancar</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(saldoIpal)}</h3>
+            </div>
+          </div>
+
+          <!-- DETAIL JALUR PEMBAYARAN IPAL -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Status Deposit & WC Warga</span>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">Warga</th>
+                    <th class="p-4">Kapasitas WC</th>
+                    <th class="p-4">Wajib Bayar / Bulan</th>
+                    <th class="p-4 text-right">Akumulasi Deposit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.warga.map(w => {
+                    const wc = Number(w["Jumlah WC"]);
+                    const dep = kalkulasiSistem.deposit[w["ID Warga"]]?.ipal || 0;
+                    return `
+                      <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                        <td class="p-4 font-bold text-slate-800">${w.Nama}</td>
+                        <td class="p-4 font-semibold">${wc} unit WC</td>
+                        <td class="p-4 font-medium text-slate-600">Rp ${formatIDR(5000 * wc)}</td>
+                        <td class="p-4 text-right font-extrabold text-teal-600">Rp ${formatIDR(dep)}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // MODULE 7: KAS JIMPITAN
+    function renderJimpitan(target) {
+      const tMasuk = state.pembayaran.reduce((a, b) => a + Number(b["Jimpitan Dibayar"]), 0);
+      const tKeluar = state.pengeluaran.filter(e => e["Jenis Kas"] === "Jimpitan").reduce((a, b) => a + Number(b.Nominal), 0);
+      const saldoJimp = tMasuk - tKeluar;
+      const jimpNom = state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN") ? Number(state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN").Nilai) : 3000;
+
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">KAS JIMPITAN SUKARELA/WAJIB</h2>
+            <p class="text-xs text-slate-500 font-medium">Nominal Jimpitan saat ini diatur senilai <span class="text-teal-600 font-bold">Rp ${formatIDR(jimpNom)}</span> per pertemuan.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Kas Jimpitan Masuk</p>
+              <h3 class="text-lg font-black text-slate-800 mt-1">Rp ${formatIDR(tMasuk)}</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Pengeluaran Jimpitan</p>
+              <h3 class="text-lg font-black text-rose-500 mt-1">Rp ${formatIDR(tKeluar)}</h3>
+            </div>
+            <div class="bg-amber-500 p-5 rounded-2xl text-white shadow-md">
+              <p class="text-[10px] text-amber-100 font-bold uppercase tracking-wider">Sisa Saldo Jimpitan</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(saldoJimp)}</h3>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Akumulasi Deposit Jimpitan Warga</span>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">Warga</th>
+                    <th class="p-4">Status Simpan Kelebihan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.warga.map(w => {
+                    const dep = kalkulasiSistem.deposit[w["ID Warga"]]?.jimpitan || 0;
+                    return `
+                      <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                        <td class="p-4 font-bold text-slate-800">${w.Nama}</td>
+                        <td class="p-4 font-bold text-teal-600">Rp ${formatIDR(dep)}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // MODULE 8: KAS SOSIAL
+    function renderKasSosial(target) {
+      const tMasuk = state.pembayaran.reduce((a, b) => a + Number(b["Kas Sosial Dibayar"]), 0);
+      const tKeluar = state.pengeluaran.filter(e => e["Jenis Kas"] === "Kas Sosial").reduce((a, b) => a + Number(b.Nominal), 0);
+      const saldoS = tMasuk - tKeluar;
+
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">DANA KAS SOSIAL KEMASYARAKATAN</h2>
+            <p class="text-xs text-slate-500 font-medium">Minimal kontribusi Rp5.000 per warga per pertemuan. Digunakan untuk bantuan sosial kemasyarakatan.</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Kas Sosial Masuk</p>
+              <h3 class="text-lg font-black text-slate-800 mt-1">Rp ${formatIDR(tMasuk)}</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Pengeluaran Bantuan</p>
+              <h3 class="text-lg font-black text-rose-500 mt-1">Rp ${formatIDR(tKeluar)}</h3>
+            </div>
+            <div class="bg-rose-500 p-5 rounded-2xl text-white shadow-md">
+              <p class="text-[10px] text-rose-100 font-bold uppercase tracking-wider">Sisa Saldo Kas Sosial</p>
+              <h3 class="text-lg font-black mt-1">Rp ${formatIDR(saldoS)}</h3>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Daftar Akumulasi Deposit Sosial Warga</span>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">Warga</th>
+                    <th class="p-4">Saldo Deposit Sosial</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.warga.map(w => {
+                    const dep = kalkulasiSistem.deposit[w["ID Warga"]]?.kasSosial || 0;
+                    return `
+                      <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                        <td class="p-4 font-bold text-slate-800">${w.Nama}</td>
+                        <td class="p-4 font-bold text-teal-600">Rp ${formatIDR(dep)}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // MODULE 9: INPUT PENGELUARAN KAS
+    function renderPengeluaran(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">MANAJEMEN PENGELUARAN KAS</h2>
+              <p class="text-xs text-slate-500 font-medium">Mencatat pengeluaran di setiap alokasi jenis kas RT.</p>
+            </div>
+            <button onclick="bukaModalPengeluaran()" class="px-4.5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-xl flex items-center shadow-md transition-all">
+              <i class="fas fa-plus mr-2"></i> Input Pengeluaran Baru
+            </button>
+          </div>
+
+          <!-- TABEL LIST PENGELUARAN -->
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-xs text-left text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="p-4">Tanggal</th>
+                    <th class="p-4">Jenis Kas</th>
+                    <th class="p-4 text-right">Nominal Pengeluaran</th>
+                    <th class="p-4">Penerima Manfaat</th>
+                    <th class="p-4">Keterangan</th>
+                    <th class="p-4 text-center">Bukti Nota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.pengeluaran.map(e => `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/40">
+                      <td class="p-4 font-bold text-slate-800">${e.Tanggal}</td>
+                      <td class="p-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                        e["Jenis Kas"] === 'Arisan' ? 'bg-cyan-50 text-cyan-600' :
+                        e["Jenis Kas"] === 'IPAL' ? 'bg-indigo-50 text-indigo-600' :
+                        e["Jenis Kas"] === 'Jimpitan' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                      }">${e["Jenis Kas"]}</span></td>
+                      <td class="p-4 text-right font-black text-rose-500">Rp ${formatIDR(e.Nominal)}</td>
+                      <td class="p-4 font-semibold">${e.Penerima}</td>
+                      <td class="p-4 font-medium">${e.Keterangan}</td>
+                      <td class="p-4 text-center">
+                        ${e["Bukti Link"] ? `<a href="${e["Bukti Link"]}" target="_blank" class="text-teal-500 hover:underline"><i class="fas fa-file-image text-base"></i> Lihat</a>` : '-'}
+                      </td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="6" class="p-6 text-center text-slate-400 font-medium">Belum ada catatan pengeluaran kas.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL FORM PENGELUARAN -->
+        <div id="modalPengeluaran" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 class="text-base font-extrabold text-slate-900 mb-4">Input Pengeluaran Baru</h3>
+            <form onsubmit="simpanPengeluaranSistem(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Tanggal</label>
+                <input type="date" id="formExpTgl" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Alokasi Jenis Kas</label>
+                <select id="formExpJenis" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+                  <option value="Arisan">Arisan Warga</option>
+                  <option value="IPAL">IPAL</option>
+                  <option value="Jimpitan">Jimpitan</option>
+                  <option value="Kas Sosial">Kas Sosial</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Nominal (Rp)</label>
+                <input type="number" id="formExpNominal" required min="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Penerima Dana</label>
+                <input type="text" id="formExpPenerima" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Keterangan / Deskripsi</label>
+                <input type="text" id="formExpKet" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Link Unggah Bukti (Opsional)</label>
+                <input type="url" id="formExpLink" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none" placeholder="https://...">
+              </div>
+              <div class="flex justify-end space-x-2 pt-4 border-t border-slate-100">
+                <button type="button" onclick="tutupModalPengeluaran()" class="px-4 py-2 text-slate-400 hover:bg-slate-50 rounded-lg text-xs font-bold">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-xs font-bold">Catat Pengeluaran</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function bukaModalPengeluaran() {
+      document.getElementById('modalPengeluaran').classList.remove('hidden');
+    }
+    function tutupModalPengeluaran() {
+      document.getElementById('modalPengeluaran').classList.add('hidden');
+    }
+
+    function simpanPengeluaranSistem(e) {
+      e.preventDefault();
+      const payload = {
+        tanggal: document.getElementById('formExpTgl').value,
+        jenisKas: document.getElementById('formExpJenis').value,
+        nominal: Number(document.getElementById('formExpNominal').value),
+        penerima: document.getElementById('formExpPenerima').value.trim(),
+        keterangan: document.getElementById('formExpKet').value.trim(),
+        buktiLink: document.getElementById('formExpLink').value.trim(),
+        userOperator: state.user.username
+      };
+
+      if (payload.nominal < 0) {
+        showToast("Nominal tidak boleh bernilai negatif!", true);
+        return;
+      }
+
+      showLoader(true, 'Menyimpan pengeluaran kas...');
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              tutupModalPengeluaran();
+              refreshDataSistem("Pengeluaran kas berhasil tercatat!");
+            } else {
+              showLoader(false);
+              showToast(res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal: " + err, true);
+          })
+          .executeAction("simpanPengeluaran", payload);
+      } else {
+        setTimeout(() => {
+          const newId = "EXP" + String(new Date().getTime()).slice(-4);
+          state.pengeluaran.push({
+            "ID Pengeluaran": newId, "Tanggal": payload.tanggal, "Jenis Kas": payload.jenisKas,
+            "Nominal": payload.nominal, "Keterangan": payload.keterangan, "Penerima": payload.penerima,
+            "Bukti Link": payload.buktiLink, "User Input": state.user.username
+          });
+          tutupModalPengeluaran();
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+          showToast("Simulasi simpan pengeluaran sukses!");
+        }, 500);
+      }
+    }
+
+    // MODULE 10: HISTORI PER WARGA (DETIL KAS INDIVIDU)
+    function renderHistoriWarga(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">HISTORI KAS DETAIL WARGA</h2>
+            <p class="text-xs text-slate-500 font-medium">Klik nama warga untuk menampilkan rincian riwayat pembayaran iuran lengkap dan sisa deposit (kelebihan bayar).</p>
+          </div>
+
+          <!-- INPUT PEMILIHAN WARGA -->
+          <div class="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm max-w-md">
+            <label class="block text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-1">Pilih Nama Warga</label>
+            <select id="pilihHistoriWarga" onchange="tampilkanDetailHistoriWarga()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+              <option value="">-- Cari Nama Warga --</option>
+              ${state.warga.map(w => `<option value="${w["ID Warga"]}">${w.Nama}</option>`).join('')}
+            </select>
+          </div>
+
+          <!-- CONTAINER OUTPUT HISTORI DETAIL -->
+          <div id="historiDetailArea" class="hidden space-y-6">
+            <!-- Informasi Ringkas Deposit -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="bg-teal-50 border border-teal-100 p-4 rounded-xl">
+                <p class="text-[9px] text-teal-600 font-bold uppercase tracking-wider">Deposit Arisan</p>
+                <h4 class="text-sm font-black text-slate-800" id="histDepArisan">Rp 0</h4>
+              </div>
+              <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl">
+                <p class="text-[9px] text-indigo-600 font-bold uppercase tracking-wider">Deposit IPAL</p>
+                <h4 class="text-sm font-black text-slate-800" id="histDepIpal">Rp 0</h4>
+              </div>
+              <div class="bg-amber-50 border border-amber-100 p-4 rounded-xl">
+                <p class="text-[9px] text-amber-600 font-bold uppercase tracking-wider">Deposit Jimpitan</p>
+                <h4 class="text-sm font-black text-slate-800" id="histDepJimp">Rp 0</h4>
+              </div>
+              <div class="bg-rose-50 border border-rose-100 p-4 rounded-xl">
+                <p class="text-[9px] text-rose-600 font-bold uppercase tracking-wider">Deposit Sosial</p>
+                <h4 class="text-sm font-black text-slate-800" id="histDepSos">Rp 0</h4>
+              </div>
+            </div>
+
+            <!-- Tabel Riwayat Transaksi -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Tabel Riwayat Penyetoran Kas</span>
+              </div>
+              <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-xs text-left text-slate-600">
+                  <thead>
+                    <tr class="bg-slate-50/80 text-slate-400 font-bold uppercase border-b border-slate-100">
+                      <th class="p-4">Tanggal Pembayaran</th>
+                      <th class="p-4 text-center">Arisan</th>
+                      <th class="p-4 text-center">IPAL</th>
+                      <th class="p-4 text-center">Jimpitan</th>
+                      <th class="p-4 text-center">Kas Sosial</th>
+                      <th class="p-4 text-right">Total Setor</th>
+                      <th class="p-4">Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historiDetailRows">
+                    <!-- Dihasilkan dinamis -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function tampilkanDetailHistoriWarga() {
+      const wId = document.getElementById('pilihHistoriWarga').value;
+      const area = document.getElementById('historiDetailArea');
+      const table = document.getElementById('historiDetailRows');
+      
+      if (!wId) {
+        area.classList.add('hidden');
+        return;
+      }
+
+      // 1. Tampilkan sisa deposit terkini
+      const dep = kalkulasiSistem.deposit[wId] || { arisan: 0, ipal: 0, jimpitan: 0, kasSosial: 0 };
+      document.getElementById('histDepArisan').textContent = 'Rp ' + formatIDR(dep.arisan);
+      document.getElementById('histDepIpal').textContent = 'Rp ' + formatIDR(dep.ipal);
+      document.getElementById('histDepJimp').textContent = 'Rp ' + formatIDR(dep.jimpitan);
+      document.getElementById('histDepSos').textContent = 'Rp ' + formatIDR(dep.kasSosial);
+
+      // 2. Render Riwayat
+      table.innerHTML = '';
+      const list = state.pembayaran.filter(b => b["ID Warga"] === wId);
+      
+      list.forEach(b => {
+        table.innerHTML += `
+          <tr class="border-b border-slate-100">
+            <td class="p-4 font-bold text-slate-800">${b.Tanggal}</td>
+            <td class="p-4 text-center font-semibold">Rp ${formatIDR(b["Arisan Dibayar"])}</td>
+            <td class="p-4 text-center font-semibold">Rp ${formatIDR(b["IPAL Dibayar"])}</td>
+            <td class="p-4 text-center font-semibold">Rp ${formatIDR(b["Jimpitan Dibayar"])}</td>
+            <td class="p-4 text-center font-semibold">Rp ${formatIDR(b["Kas Sosial Dibayar"])}</td>
+            <td class="p-4 text-right font-black text-emerald-600">Rp ${formatIDR(b["Total Dibayar"])}</td>
+            <td class="p-4 text-slate-500 font-medium">${b.Keterangan || '-'}</td>
+          </tr>
+        `;
+      });
+
+      if (list.length === 0) {
+        table.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400 font-semibold">Belum pernah melakukan penyetoran kas.</td></tr>`;
+      }
+
+      area.classList.remove('hidden');
+    }
+
+    // MODULE 11: LAPORAN KEUNGAN RT (CETAK, PRINT, EXPORT EXCEL & PDF, SHARE)
+    function renderLaporan(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">PUSAT LAPORAN RT TERPADU</h2>
+            <p class="text-xs text-slate-500 font-medium">Preview, cetak, export ke PDF atau Excel, dan bagikan laporan keuangan RT secara cepat.</p>
+          </div>
+
+          <!-- KONTROL FILTER & PILIHAN JENIS LAPORAN -->
+          <div class="p-6 bg-white border border-slate-100 rounded-2xl shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-1">Jenis Laporan</label>
+              <select id="pilihJenisLaporan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+                <option value="kas_arisan">Laporan Kas Arisan</option>
+                <option value="kas_ipal">Laporan Kas IPAL</option>
+                <option value="kas_jimpitan">Laporan Kas Jimpitan</option>
+                <option value="kas_sosial">Laporan Kas Sosial</option>
+                <option value="pemasukan">Laporan Semua Pemasukan</option>
+                <option value="pengeluaran">Laporan Pengeluaran</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-1">Bulan Acuan</label>
+              <select id="lapFilterBulan" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+                <option value="">Semua Bulan</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button onclick="prosesTampilLaporan()" class="w-full py-2.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-lg shadow-md transition-all">
+                <i class="fas fa-filter mr-1.5"></i> Proses & Tampilkan
+              </button>
+            </div>
+          </div>
+
+          <!-- CONTAINER LAPORAN RENDERING PREVIEW -->
+          <div id="laporanPreviewArea" class="hidden space-y-4">
+            <div class="flex flex-wrap gap-2 justify-end">
+              <button onclick="eksporLaporan('print')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg"><i class="fas fa-print mr-1"></i> Print / Cetak</button>
+              <button onclick="eksporLaporan('pdf')" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg"><i class="fas fa-file-pdf mr-1"></i> Export PDF</button>
+              <button onclick="eksporLaporan('excel')" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg"><i class="fas fa-file-excel mr-1"></i> Export Excel</button>
+              <button onclick="eksporLaporan('wa')" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg"><i class="fab fa-whatsapp mr-1"></i> Share WhatsApp</button>
+            </div>
+
+            <!-- AREA STRUKTUR DOKUMEN CETAK -->
+            <div id="printArea" class="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm space-y-6">
+              <div class="text-center space-y-1 pb-4 border-b-2 border-slate-900">
+                <h3 class="text-lg font-black tracking-wide" id="lapNamaRt">RT 05 / RW 02 - DUSUN DIGI</h3>
+                <h4 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest" id="lapJudulDoc">LAPORAN KEUANGAN KAS</h4>
+                <p class="text-[10px] text-slate-400 font-semibold" id="lapPeriode">Periode Bulan: Semua</p>
+              </div>
+
+              <!-- ISI TABEL LAPORAN DINAMIS -->
+              <div class="overflow-x-auto">
+                <table id="lapMainTable" class="w-full text-xs text-left text-slate-700">
+                  <!-- Diisi dinamis -->
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let dataLaporanTemp = []; // simpan temporary untuk ekspor
+
+    function prosesTampilLaporan() {
+      const jenis = document.getElementById('pilihJenisLaporan').value;
+      const bln = document.getElementById('lapFilterBulan').value;
+      const previewArea = document.getElementById('laporanPreviewArea');
+      const judul = document.getElementById('lapJudulDoc');
+      const periode = document.getElementById('lapPeriode');
+      const table = document.getElementById('lapMainTable');
+
+      previewArea.classList.remove('hidden');
+      judul.textContent = jenis.replace('_', ' ').toUpperCase();
+      periode.textContent = `Periode Bulan: ${bln ? bln : 'Semua Bulan'}`;
+      
+      table.innerHTML = '';
+      dataLaporanTemp = [];
+
+      // Filter Data Berdasarkan Bulan
+      let listPembayaran = [...state.pembayaran];
+      let listPengeluaran = [...state.pengeluaran];
+
+      if (bln) {
+        listPembayaran = listPembayaran.filter(b => b.Tanggal.substring(5, 7) === bln);
+        listPengeluaran = listPengeluaran.filter(e => e.Tanggal.substring(5, 7) === bln);
+      }
+
+      // SIKLUS DETIL JENIS LAPORAN
+      if (jenis === 'kas_arisan') {
+        table.innerHTML = `
+          <thead>
+            <tr class="border-b-2 border-slate-300 font-bold">
+              <th class="py-2">Tanggal</th>
+              <th class="py-2">Warga</th>
+              <th class="py-2 text-right">Penyetoran</th>
+              <th class="py-2 text-right">Distribusi / Keluar</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listPembayaran.filter(b => Number(b["Arisan Dibayar"]) > 0).map(b => {
+              const w = state.warga.find(x => x["ID Warga"] === b["ID Warga"]);
+              dataLaporanTemp.push({ Tanggal: b.Tanggal, Nama: w ? w.Nama : '-', Setor: Number(b["Arisan Dibayar"]), Keluar: 0 });
+              return `<tr class="border-b border-slate-100"><td class="py-2">${b.Tanggal}</td><td>${w ? w.Nama : '-'}</td><td class="py-2 text-right">Rp ${formatIDR(b["Arisan Dibayar"])}</td><td class="py-2 text-right">-</td></tr>`;
+            }).join('')}
+            ${listPengeluaran.filter(e => e["Jenis Kas"] === 'Arisan').map(e => {
+              dataLaporanTemp.push({ Tanggal: e.Tanggal, Nama: e.Penerima, Setor: 0, Keluar: Number(e.Nominal) });
+              return `<tr class="border-b border-slate-100 text-rose-600"><td class="py-2">${e.Tanggal}</td><td>[PENGELUARAN] ${e.Penerima}</td><td class="py-2 text-right">-</td><td class="py-2 text-right">Rp ${formatIDR(e.Nominal)}</td></tr>`;
+            }).join('')}
+          </tbody>
+        `;
+      } 
+      else if (jenis === 'kas_ipal') {
+        table.innerHTML = `
+          <thead>
+            <tr class="border-b-2 border-slate-300 font-bold">
+              <th class="py-2">Tanggal</th>
+              <th class="py-2">Warga</th>
+              <th class="py-2 text-right">Iuran IPAL</th>
+              <th class="py-2 text-right">Biaya Pengeluaran</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listPembayaran.filter(b => Number(b["IPAL Dibayar"]) > 0).map(b => {
+              const w = state.warga.find(x => x["ID Warga"] === b["ID Warga"]);
+              dataLaporanTemp.push({ Tanggal: b.Tanggal, Nama: w ? w.Nama : '-', Setor: Number(b["IPAL Dibayar"]), Keluar: 0 });
+              return `<tr class="border-b border-slate-100"><td class="py-2">${b.Tanggal}</td><td>${w ? w.Nama : '-'}</td><td class="py-2 text-right">Rp ${formatIDR(b["IPAL Dibayar"])}</td><td class="py-2 text-right">-</td></tr>`;
+            }).join('')}
+            ${listPengeluaran.filter(e => e["Jenis Kas"] === 'IPAL').map(e => {
+              dataLaporanTemp.push({ Tanggal: e.Tanggal, Nama: e.Penerima, Setor: 0, Keluar: Number(e.Nominal) });
+              return `<tr class="border-b border-slate-100 text-rose-600"><td class="py-2">${e.Tanggal}</td><td>[PENGELUARAN] ${e.Penerima}</td><td class="py-2 text-right">-</td><td class="py-2 text-right">Rp ${formatIDR(e.Nominal)}</td></tr>`;
+            }).join('')}
+          </tbody>
+        `;
+      }
+      else if (jenis === 'kas_jimpitan') {
+        table.innerHTML = `
+          <thead>
+            <tr class="border-b-2 border-slate-300 font-bold">
+              <th class="py-2">Tanggal</th>
+              <th class="py-2">Warga</th>
+              <th class="py-2 text-right">Iuran Jimpitan</th>
+              <th class="py-2 text-right">Biaya Pengeluaran</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listPembayaran.filter(b => Number(b["Jimpitan Dibayar"]) > 0).map(b => {
+              const w = state.warga.find(x => x["ID Warga"] === b["ID Warga"]);
+              dataLaporanTemp.push({ Tanggal: b.Tanggal, Nama: w ? w.Nama : '-', Setor: Number(b["Jimpitan Dibayar"]), Keluar: 0 });
+              return `<tr class="border-b border-slate-100"><td class="py-2">${b.Tanggal}</td><td>${w ? w.Nama : '-'}</td><td class="py-2 text-right">Rp ${formatIDR(b["Jimpitan Dibayar"])}</td><td class="py-2 text-right">-</td></tr>`;
+            }).join('')}
+            ${listPengeluaran.filter(e => e["Jenis Kas"] === 'Jimpitan').map(e => {
+              dataLaporanTemp.push({ Tanggal: e.Tanggal, Nama: e.Penerima, Setor: 0, Keluar: Number(e.Nominal) });
+              return `<tr class="border-b border-slate-100 text-rose-600"><td class="py-2">${e.Tanggal}</td><td>[PENGELUARAN] ${e.Penerima}</td><td class="py-2 text-right">-</td><td class="py-2 text-right">Rp ${formatIDR(e.Nominal)}</td></tr>`;
+            }).join('')}
+          </tbody>
+        `;
+      }
+      else if (jenis === 'kas_sosial') {
+        table.innerHTML = `
+          <thead>
+            <tr class="border-b-2 border-slate-300 font-bold">
+              <th class="py-2">Tanggal</th>
+              <th class="py-2">Warga</th>
+              <th class="py-2 text-right">Donasi Masuk</th>
+              <th class="py-2 text-right">Pengeluaran Bantuan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listPembayaran.filter(b => Number(b["Kas Sosial Dibayar"]) > 0).map(b => {
+              const w = state.warga.find(x => x["ID Warga"] === b["ID Warga"]);
+              dataLaporanTemp.push({ Tanggal: b.Tanggal, Nama: w ? w.Nama : '-', Setor: Number(b["Kas Sosial Dibayar"]), Keluar: 0 });
+              return `<tr class="border-b border-slate-100"><td class="py-2">${b.Tanggal}</td><td>${w ? w.Nama : '-'}</td><td class="py-2 text-right">Rp ${formatIDR(b["Kas Sosial Dibayar"])}</td><td class="py-2 text-right">-</td></tr>`;
+            }).join('')}
+            ${listPengeluaran.filter(e => e["Jenis Kas"] === 'Kas Sosial').map(e => {
+              dataLaporanTemp.push({ Tanggal: e.Tanggal, Nama: e.Penerima, Setor: 0, Keluar: Number(e.Nominal) });
+              return `<tr class="border-b border-slate-100 text-rose-600"><td class="py-2">${e.Tanggal}</td><td>[SOSIAL] ${e.Penerima}</td><td class="py-2 text-right">-</td><td class="py-2 text-right">Rp ${formatIDR(e.Nominal)}</td></tr>`;
+            }).join('')}
+          </tbody>
+        `;
+      }
+      else if (jenis === 'pemasukan') {
+        table.innerHTML = `
+          <thead>
+            <tr class="border-b-2 border-slate-300 font-bold">
+              <th class="py-2">Tanggal</th>
+              <th class="py-2">Warga</th>
+              <th class="py-2 text-right">Arisan</th>
+              <th class="py-2 text-right">IPAL</th>
+              <th class="py-2 text-right">Jimpitan</th>
+              <th class="py-2 text-right">Sosial</th>
+              <th class="py-2 text-right">Total Setor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listPembayaran.map(b => {
+              const w = state.warga.find(x => x["ID Warga"] === b["ID Warga"]);
+              dataLaporanTemp.push({ Tanggal: b.Tanggal, Nama: w ? w.Nama : '-', Arisan: Number(b["Arisan Dibayar"]), IPAL: Number(b["IPAL Dibayar"]), Jimpitan: Number(b["Jimpitan Dibayar"]), Sosial: Number(b["Kas Sosial Dibayar"]), Total: Number(b["Total Dibayar"]) });
+              return `<tr class="border-b border-slate-100">
+                <td class="py-2">${b.Tanggal}</td>
+                <td>${w ? w.Nama : '-'}</td>
+                <td class="py-2 text-right">Rp ${formatIDR(b["Arisan Dibayar"])}</td>
+                <td class="py-2 text-right">Rp ${formatIDR(b["IPAL Dibayar"])}</td>
+                <td class="py-2 text-right">Rp ${formatIDR(b["Jimpitan Dibayar"])}</td>
+                <td class="py-2 text-right">Rp ${formatIDR(b["Kas Sosial Dibayar"])}</td>
+                <td class="py-2 text-right font-bold">Rp ${formatIDR(b["Total Dibayar"])}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        `;
+      }
+      else if (jenis === 'pengeluaran') {
+        table.innerHTML = `
+          <thead>
+            <tr class="border-b-2 border-slate-300 font-bold">
+              <th class="py-2">Tanggal</th>
+              <th class="py-2">Jenis Kas</th>
+              <th class="py-2 text-right">Nominal</th>
+              <th class="py-2">Penerima</th>
+              <th class="py-2">Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listPengeluaran.map(e => {
+              dataLaporanTemp.push({ Tanggal: e.Tanggal, Pos: e["Jenis Kas"], Nominal: Number(e.Nominal), Penerima: e.Penerima, Ket: e.Keterangan });
+              return `<tr class="border-b border-slate-100 text-rose-600">
+                <td class="py-2">${e.Tanggal}</td>
+                <td>${e["Jenis Kas"]}</td>
+                <td class="py-2 text-right font-bold">Rp ${formatIDR(e.Nominal)}</td>
+                <td>${e.Penerima}</td>
+                <td>${e.Keterangan}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        `;
+      }
+
+      if (dataLaporanTemp.length === 0) {
+        table.innerHTML = `<tbody><tr><td class="text-center py-8 text-slate-400">Tidak ada record data iuran kas pada filter terpilih.</td></tr></tbody>`;
+      }
+    }
+
+    // HANDLER METODE EKSPOR LAPORAN
+    function eksporLaporan(tipe) {
+      if (dataLaporanTemp.length === 0) {
+        showToast("Laporan kosong, proses data terlebih dahulu!", true);
+        return;
+      }
+
+      if (tipe === 'print') {
+        const printContent = document.getElementById('printArea').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        // Membuka jendela print mandiri agar styling rapi
+        const win = window.open('', '_blank');
+        win.document.write(`
+          <html>
+            <head>
+              <title>Print Laporan RT</title>
+              <script src="https://cdn.tailwindcss.com"><\/script>
+              <style>body { font-family: sans-serif; }</style>
+            </head>
+            <body class="p-8" onload="window.print(); window.close();">
+              ${printContent}
+            </body>
+          </html>
+        `);
+        win.document.close();
+      } 
+      else if (tipe === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(dataLaporanTemp);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan_RT");
+        XLSX.writeFile(workbook, `Laporan_RT_${new Date().toISOString().slice(0,10)}.xlsx`);
+        showToast("Laporan berhasil di-export ke Excel!");
+      } 
+      else if (tipe === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.text("Laporan Keuangan Rukun Tetangga", 14, 15);
+        doc.text(`Periode: ${document.getElementById('lapPeriode').textContent}`, 14, 23);
+        
+        const headers = Object.keys(dataLaporanTemp[0]);
+        const rows = dataLaporanTemp.map(row => Object.values(row));
+        
+        doc.autoTable({
+          head: [headers],
+          body: rows,
+          startY: 30
+        });
+        
+        doc.save(`Laporan_RT_${new Date().toISOString().slice(0,10)}.pdf`);
+        showToast("Laporan berhasil di-export ke PDF!");
+      } 
+      else if (tipe === 'wa') {
+        const waText = encodeURIComponent(`Halo Warga RT, berikut ringkasan ${document.getElementById('lapJudulDoc').textContent}. Silakan login ke aplikasi web untuk melihat detail laporan lengkap!`);
+        window.open(`https://api.whatsapp.com/send?text=${waText}`, '_blank');
+      }
+    }
+
+    // MODULE 12: PENGATURAN RT
+    function renderPengaturan(target) {
+      const jimpNom = state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN") ? state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN").Nilai : "3000";
+      const namaRt = state.pengaturan.find(p => p.Kunci === "NAMA_RT") ? state.pengaturan.find(p => p.Kunci === "NAMA_RT").Nilai : "Rukun Tetangga 05";
+
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">PENGATURAN SISTEM RT</h2>
+            <p class="text-xs text-slate-500 font-medium">Ubah nominal acuan atau nama instansi kepengurusan RT.</p>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm max-w-md space-y-4">
+            <form onsubmit="simpanPengaturanSistem(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Nama Organisasi / RT</label>
+                <input type="text" id="setNamaRt" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none" value="${namaRt}">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Nominal Jimpitan Acuan (Rp)</label>
+                <input type="number" id="setNominalJimp" required min="0" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none" value="${jimpNom}">
+              </div>
+              <div class="flex justify-end pt-2">
+                <button type="submit" class="px-5 py-2.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-xs font-bold transition-all shadow-md">
+                  Simpan Pengaturan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function simpanPengaturanSistem(e) {
+      e.preventDefault();
+      const nJimp = Number(document.getElementById('setNominalJimp').value);
+      const nRt = document.getElementById('setNamaRt').value.trim();
+
+      if (nJimp < 0) {
+        showToast("Nominal tidak boleh bernilai negatif!", true);
+        return;
+      }
+
+      showLoader(true, 'Menyimpan konfigurasi...');
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res.success) {
+              refreshDataSistem("Konfigurasi sistem berhasil diperbarui!");
+            } else {
+              showLoader(false);
+              showToast(res.message, true);
+            }
+          })
+          .withFailureHandler((err) => {
+            showLoader(false);
+            showToast("Gagal: " + err, true);
+          })
+          .executeAction("updatePengaturan", { nominalJimpitan: nJimp, namaRt: nRt, userOperator: state.user.username });
+      } else {
+        setTimeout(() => {
+          let j = state.pengaturan.find(p => p.Kunci === "NOMINAL_JIMPITAN");
+          if(j) j.Nilai = String(nJimp);
+          let n = state.pengaturan.find(p => p.Kunci === "NAMA_RT");
+          if(n) n.Nilai = nRt;
+          
+          generateSistemPintar();
+          renderContentArea();
+          showLoader(false);
+          showToast("Simulasi update pengaturan berhasil!");
+        }, 400);
+      }
+    }
+
+    // MODULE 12: BACKUP / RESET DATABASE
+    function renderBackup(target) {
+      target.innerHTML = `
+        <div class="space-y-6">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">KONTROL DATABASE GOOGLE SHEETS</h2>
+            <p class="text-xs text-slate-500 font-medium">Lakukan pembersihan transaksi atau unduh salinan database Anda.</p>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm max-w-lg space-y-6">
+            <div class="space-y-1">
+              <span class="font-bold text-slate-800 text-sm block">1. Ekspor Database Ke Excel</span>
+              <p class="text-xs text-slate-500">Mengunduh cadangan seluruh tabel database iuran dan master warga saat ini.</p>
+              <button onclick="downloadBackupExcel()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-all mt-2">
+                <i class="fas fa-download mr-1.5"></i> Download Backup
+              </button>
+            </div>
+
+            <div class="h-px bg-slate-100"></div>
+
+            <div class="space-y-1">
+              <span class="font-bold text-red-600 text-sm block">2. Inisialisasi Database Google Sheets</span>
+              <p class="text-xs text-slate-500">Memicu pembuatan ulang struktur lembar kerja kosong jika Anda memindahkan file ke Spreadsheet baru.</p>
+              <button onclick="memicuInisialisasi()" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-all mt-2">
+                <i class="fas fa-magic mr-1.5"></i> Trigger Inisialisasi Database
+              </button>
+            </div>
+
+            <div class="h-px bg-slate-100"></div>
+
+            <div class="space-y-1">
+              <span class="font-bold text-red-600 text-sm block">3. Reset Database (Bahaya!)</span>
+              <p class="text-xs text-slate-500">Mengekosongkan seluruh tabel pembayaran, pengeluaran, pertemuan, dan warga. Tindakan ini tidak dapat dibatalkan!</p>
+              <button onclick="memicuResetDatabase()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all mt-2">
+                <i class="fas fa-trash-alt mr-1.5"></i> Kosongkan Seluruh Data
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function downloadBackupExcel() {
+      const workbook = XLSX.utils.book_new();
+      
+      const w1 = XLSX.utils.json_to_sheet(state.warga);
+      const w2 = XLSX.utils.json_to_sheet(state.pembayaran);
+      const w3 = XLSX.utils.json_to_sheet(state.pengeluaran);
+      const w4 = XLSX.utils.json_to_sheet(state.pertemuan);
+      
+      XLSX.utils.book_append_sheet(workbook, w1, "Warga");
+      XLSX.utils.book_append_sheet(workbook, w2, "Pembayaran");
+      XLSX.utils.book_append_sheet(workbook, w3, "Pengeluaran");
+      XLSX.utils.book_append_sheet(workbook, w4, "Pertemuan");
+      
+      XLSX.writeFile(workbook, `BACKUP_DATABASE_RT_${new Date().toISOString().slice(0,10)}.xlsx`);
+      showToast("Unduhan backup database berhasil!");
+    }
+
+    function memicuInisialisasi() {
+      showConfirm("Trigger Inisialisasi", "Tindakan ini akan membuat sheet & akun admin bawaan jika belum ada di Spreadsheet. Lanjutkan?", () => {
+        showLoader(true, "Menjalankan inisialisasi...");
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler((res) => {
+              showLoader(false);
+              showToast(res);
+            })
+            .withFailureHandler((err) => {
+              showLoader(false);
+              showToast("Inisialisasi gagal: " + err, true);
+            })
+            .inisialisasiDatabase();
+        } else {
+          setTimeout(() => {
+            showLoader(false);
+            showToast("Mode simulasi offline: Inisialisasi diproses.");
+          }, 500);
+        }
+      });
+    }
+
+    function memicuResetDatabase() {
+      showConfirm("HAPUS DATABASE MASSAL", "Tindakan ini akan mengosongkan seluruh data transaksi iuran warga, jadwal, dan pengeluaran secara permanen di Google Spreadsheet Anda! Lanjutkan?", () => {
+        showLoader(true, "Mereset seluruh tabel database...");
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler((res) => {
+              if (res.success) {
+                refreshDataSistem("Database berhasil di-reset sepenuhnya!");
+              } else {
+                showLoader(false);
+                showToast(res.message, true);
+              }
+            })
+            .withFailureHandler((err) => {
+              showLoader(false);
+              showToast("Gagal: " + err, true);
+            })
+            .executeAction("clearDatabase", { userOperator: state.user.username });
+        } else {
+          setTimeout(() => {
+            state.warga = []; state.pembayaran = []; state.pengeluaran = []; state.pertemuan = []; state.arisanDetail = [];
+            generateSistemPintar();
+            renderContentArea();
+            showLoader(false);
+            showToast("Database simulasi berhasil dikosongkan.");
+          }, 600);
+        }
+      });
+    }
+  </script>
 </body>
 </html>
